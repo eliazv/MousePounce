@@ -129,7 +129,7 @@ class CardImageWidget extends StatelessWidget {
       })();
 
       // Very rounded corners with subtle gray border (increased to 0.15)
-      final borderRadius = BorderRadius.circular(cardRect.width * 0.15);
+      final borderRadius = BorderRadius.circular(cardRect.width * 0.1);
 
       return Stack(children: [
         Positioned.fromRect(
@@ -139,12 +139,12 @@ class CardImageWidget extends StatelessWidget {
             child: isSvg
                 ? SvgPicture.asset(
                     imagePath,
-                    fit: BoxFit.contain,
+                    fit: BoxFit.cover,
                     alignment: Alignment.center,
                   )
                 : Image(
                     image: AssetImage(imagePath),
-                    fit: BoxFit.contain,
+                    fit: BoxFit.cover,
                     alignment: Alignment.center,
                   ),
           ),
@@ -154,7 +154,7 @@ class CardImageWidget extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(
               border: Border.all(
-                color: Colors.grey.shade400,
+                color: Colors.black,
                 width: 1.0,
               ),
               borderRadius: borderRadius,

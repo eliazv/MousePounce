@@ -110,6 +110,42 @@ class _MainMenuBottomSheetContentState
     setState(() => _currentView = _MenuView.main);
   }
 
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: EdgeInsets.only(left: 4, right: 16, top: 4, bottom: 8),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: Color(0xFF1976D2).withOpacity(0.15),
+              shape: BoxShape.circle,
+              border: Border.all(color: Color(0xFF1976D2), width: 2),
+            ),
+            child: IconButton(
+              icon: Icon(Icons.arrow_back_rounded,
+                  color: Color(0xFF1976D2), size: 20),
+              onPressed: _navigateToMain,
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+            ),
+          ),
+          SizedBox(width: 12),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1976D2),
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final minDim = widget.displaySize.shortestSide;
@@ -294,8 +330,6 @@ class _MainMenuBottomSheetContentState
   }
 
   Widget _buildPreferencesMenu(BuildContext context) {
-    final titleFontSize = 18.0;
-
     Widget sectionTitle(String title) => Padding(
           padding: EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 4),
           child: Text(
@@ -422,28 +456,7 @@ class _MainMenuBottomSheetContentState
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Header with back button
-        Padding(
-          padding: EdgeInsets.only(left: 4, right: 16, top: 4, bottom: 8),
-          child: Row(
-            children: [
-              IconButton(
-                icon: Icon(Icons.arrow_back_rounded, color: Colors.white),
-                onPressed: _navigateToMain,
-                visualDensity: VisualDensity.compact,
-              ),
-              Text(
-                'Preferences',
-                style: TextStyle(
-                  fontSize: titleFontSize,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
-          ),
-        ),
+        _buildSectionHeader('Preferences'),
 
         // Scrollable content with white background
         Flexible(
@@ -536,63 +549,15 @@ class _MainMenuBottomSheetContentState
             ),
           ),
         ),
-
-        // Back button
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Color(0xFF1976D2),
-              foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(vertical: 14),
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              textStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-            ),
-            onPressed: _navigateToMain,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.check_rounded, size: 18),
-                SizedBox(width: 8),
-                Text('Done'),
-              ],
-            ),
-          ),
-        ),
       ],
     );
   }
 
   Widget _buildRulesMenu(BuildContext context) {
-    final titleFontSize = 18.0;
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Header with back button
-        Padding(
-          padding: EdgeInsets.only(left: 4, right: 16, top: 4, bottom: 8),
-          child: Row(
-            children: [
-              IconButton(
-                icon: Icon(Icons.arrow_back_rounded, color: Colors.white),
-                onPressed: _navigateToMain,
-                visualDensity: VisualDensity.compact,
-              ),
-              Text(
-                'Game Rules',
-                style: TextStyle(
-                  fontSize: titleFontSize,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
-          ),
-        ),
+        _buildSectionHeader('Game Rules'),
 
         // Scrollable content with white background
         Flexible(
@@ -632,8 +597,7 @@ class _MainMenuBottomSheetContentState
                             listBullet:
                                 TextStyle(fontSize: 13, color: Colors.black87),
                           ),
-                          onTapLink: (text, href, title) =>
-                              launch(href ?? ''),
+                          onTapLink: (text, href, title) => launch(href ?? ''),
                           listItemCrossAxisAlignment:
                               MarkdownListItemCrossAxisAlignment.start,
                         );
@@ -647,31 +611,6 @@ class _MainMenuBottomSheetContentState
                   ),
                 ),
               ),
-            ),
-          ),
-        ),
-
-        // Back button
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Color(0xFF1976D2),
-              foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(vertical: 14),
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              textStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-            ),
-            onPressed: _navigateToMain,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.check_rounded, size: 18),
-                SizedBox(width: 8),
-                Text('Done'),
-              ],
             ),
           ),
         ),

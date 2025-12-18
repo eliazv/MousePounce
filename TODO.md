@@ -13,3 +13,5 @@
 - cambia stile bottone menu , piu picoclo e glass effect
 - suoni carte e musica
 - rifai grafiche gatto e tavolo da gioco. al posto di pensieri che comapiono cambia l'espressione. sfondo sietro gatto
+- about
+- musicanon sis toppa se disattiviamo
