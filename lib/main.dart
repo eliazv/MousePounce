@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -119,7 +120,8 @@ class _MyHomePageState extends State<MyHomePage> {
   void _readPreferencesAndStartGame() async {
     this.preferences = await SharedPreferences.getInstance();
     soundPlayer.enabled = preferences.getBool(soundEnabledPrefsKey) ?? true;
-    soundPlayer.musicEnabled = preferences.getBool(musicEnabledPrefsKey) ?? false;
+    soundPlayer.musicEnabled =
+        preferences.getBool(musicEnabledPrefsKey) ?? false;
     soundPlayer.startBackgroundMusic();
 
     for (var v in RuleVariation.values) {
@@ -761,7 +763,9 @@ class _MyHomePageState extends State<MyHomePage> {
                 borderRadius: BorderRadius.circular(16),
                 onTap: () => _showMenu(context, displaySize),
                 child: Icon(
-                  aiMode == AIMode.ai_vs_ai ? Icons.menu_rounded : Icons.pause_rounded,
+                  aiMode == AIMode.ai_vs_ai
+                      ? Icons.menu_rounded
+                      : Icons.pause_rounded,
                   color: Colors.white,
                   size: 24,
                 ),
@@ -1017,7 +1021,7 @@ class _MyHomePageState extends State<MyHomePage> {
   int timingTestAnimationStartTimestamp = 0;
 
   void runAnimationTimingTestIfNeeded() {
-    if (Platform.isAndroid) {
+    if (!kIsWeb && Platform.isAndroid) {
       Future.delayed(Duration(milliseconds: 1000), () {
         setState(() {
           timingTestAnimationStartTimestamp =
@@ -1102,91 +1106,102 @@ class _MyHomePageState extends State<MyHomePage> {
     const cardAreaBackgroundColor = Color.fromARGB(255, 0, 128, 0);
 
     return Scaffold(
-        body: AnimatedBackgroundWidget(
-          child: Padding(
-            padding: displayPadding,
-            child: Center(
-              child: Stack(
-                children: [
-                  // Use a stack with the card pile last so that the cards will draw
-                  // over the player areas when they're animating in.
-                  Stack(
-                    children: [
-                      if (runningTimingTestAnimation) timingTestAnimation(),
-                      // Top player area with sparkle background
-                      Positioned(
-                        left: 0,
-                        width: displaySize.width,
-                        top: 0,
-                        height: playerHeight,
-                        child: Stack(
-                          children: [
-                            SparkleBackground(playerIndex: 1),
+      body: AnimatedBackgroundWidget(
+        child: Padding(
+          padding: displayPadding,
+          child: Center(
+            child: Stack(
+              children: [
+                // Use a stack with the card pile last so that the cards will draw
+                // over the player areas when they're animating in.
+                Stack(
+                  children: [
+                    if (runningTimingTestAnimation) timingTestAnimation(),
+                    // Top-player background that extends under the table by 30px.
+                    Positioned(
+                      left: 0,
+                      width: displaySize.width,
+                      top: 0,
+                      // extend 30px below the player area so it goes "sotto il tavolo"
+                      height: playerHeight + 30,
+                      child: TopPlayerBackground(
+                        visible: aiMode != AIMode.human_vs_human,
+                      ),
+                    ),
+                    // Top player area with sparkle background
+                    Positioned(
+                      left: 0,
+                      width: displaySize.width,
+                      top: 0,
+                      height: playerHeight,
+                      child: Stack(
+                        children: [
+                          SparkleBackground(playerIndex: 1),
+                          Container(
+                              height: playerHeight,
+                              width: double.infinity,
+                              child: aiMode == AIMode.human_vs_human
+                                  ? _playerStatusWidget(game, 1, displaySize)
+                                  : _aiPlayerWidget(game, 1, displaySize)),
+                        ],
+                      ),
+                    ),
+                    // Bottom player area with sparkle background
+                    Positioned(
+                      left: 0,
+                      width: displaySize.width,
+                      top: displaySize.height - playerHeight,
+                      height: playerHeight,
+                      child: Stack(
+                        children: [
+                          SparkleBackground(playerIndex: 0),
+                          Container(
+                              height: playerHeight,
+                              width: double.infinity,
+                              child: aiMode == AIMode.ai_vs_ai
+                                  ? _aiPlayerWidget(game, 0, displaySize)
+                                  : _playerStatusWidget(game, 0, displaySize)),
+                        ],
+                      ),
+                    ),
+                    // Card area with decorative felt border
+                    Positioned(
+                      left: 0,
+                      width: displaySize.width,
+                      top: playerHeight,
+                      height: displaySize.height - 2 * playerHeight,
+                      child: FeltTableBorder(
+                        child: Container(
+                          color: cardAreaBackgroundColor,
+                          child: Stack(children: [
                             Container(
-                                height: playerHeight,
-                                width: double.infinity,
-                                child: aiMode == AIMode.human_vs_human
-                                    ? _playerStatusWidget(game, 1, displaySize)
-                                    : _aiPlayerWidget(game, 1, displaySize)),
-                          ],
+                              child: _pileContent(game, displaySize),
+                            ),
+                            _noSlapWidget(0, displaySize),
+                            _noSlapWidget(1, displaySize),
+                          ]),
                         ),
                       ),
-                      // Bottom player area with sparkle background
-                      Positioned(
-                        left: 0,
-                        width: displaySize.width,
-                        top: displaySize.height - playerHeight,
-                        height: playerHeight,
-                        child: Stack(
-                          children: [
-                            SparkleBackground(playerIndex: 0),
-                            Container(
-                                height: playerHeight,
-                                width: double.infinity,
-                                child: aiMode == AIMode.ai_vs_ai
-                                    ? _aiPlayerWidget(game, 0, displaySize)
-                                    : _playerStatusWidget(game, 0, displaySize)),
-                          ],
-                        ),
-                      ),
-                      // Card area with decorative felt border
-                      Positioned(
-                        left: 0,
-                        width: displaySize.width,
-                        top: playerHeight,
-                        height: displaySize.height - 2 * playerHeight,
-                        child: FeltTableBorder(
-                          child: Container(
-                            color: cardAreaBackgroundColor,
-                            child: Stack(children: [
-                              Container(
-                                child: _pileContent(game, displaySize),
-                              ),
-                              _noSlapWidget(0, displaySize),
-                              _noSlapWidget(1, displaySize),
-                            ]),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
+                ),
 
-                  if (dialogMode == DialogMode.game_over)
-                    _gameOverDialog(displaySize),
-                  if (dialogMode == DialogMode.preferences)
-                    _preferencesDialog(displaySize),
-                  if (dialogMode == DialogMode.animation_speed_warning)
-                    animationSpeedWarningDialog(displaySize),
-                  if (dialogMode == DialogMode.none &&
-                      !menuOpen &&
-                      (menuButtonVisible || _isGameActive()))
-                    _menuIcon(displaySize),
-                  // Text(this.animationMode.toString()),
-                ],
-              ),
+                if (dialogMode == DialogMode.game_over)
+                  _gameOverDialog(displaySize),
+                if (dialogMode == DialogMode.preferences)
+                  _preferencesDialog(displaySize),
+                if (dialogMode == DialogMode.animation_speed_warning)
+                  animationSpeedWarningDialog(displaySize),
+                if (dialogMode == DialogMode.none &&
+                    !menuOpen &&
+                    (menuButtonVisible || _isGameActive()))
+                  _menuIcon(displaySize),
+                // Text(this.animationMode.toString()),
+              ],
             ),
           ),
         ),
+      ),
     );
   }
 }

@@ -13,5 +13,6 @@
 - cambia stile bottone menu , piu picoclo e glass effect
 - suoni carte e musica
 - rifai grafiche gatto e tavolo da gioco. al posto di pensieri che comapiono cambia l'espressione. sfondo sietro gatto
-- about
-- musicanon sis toppa se disattiviamo
+
+- musica non si stoppa se disattiviamo da impostazioni
+- non sento suoni in gioco di quando gioco una card e di qunado viene preso un mazzo, anche quando viene tappate le card ci deve essere feedback aptico e suono assets\audio\tap.wav

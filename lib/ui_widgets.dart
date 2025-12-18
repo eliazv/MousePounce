@@ -31,30 +31,40 @@ class PlayCardButton extends StatelessWidget {
         child: ElevatedButton(
           onPressed: enabled ? onPressed : null,
           style: ElevatedButton.styleFrom(
-            backgroundColor:
-                enabled ? Colors.blue.shade700 : Colors.grey.shade400,
+            backgroundColor: enabled
+                ? Colors.blue.shade700.withOpacity(0.8)
+                : Colors.grey.shade400.withOpacity(0.8),
             foregroundColor: Colors.white,
+            minimumSize: Size.zero,
             padding: EdgeInsets.symmetric(
-              horizontal: 24,
-              vertical: 16,
+              horizontal: 16,
+              vertical: 12,
             ),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(30),
+              side: BorderSide(color: Colors.white.withOpacity(0.3), width: 1),
             ),
             elevation: enabled ? 4 : 1,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
+              SizedBox(
+                width: 80,
+                child: Image.asset(
+                  'assets/icons/cards.png',
+                  fit: BoxFit.contain,
+                  color: enabled ? null : Colors.white,
+                  colorBlendMode: enabled ? null : BlendMode.srcIn,
+                ),
+              ),
+              SizedBox(width: 12),
+              Column(
                 mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.style,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                  SizedBox(width: 12),
                   Text(
                     'Play card',
                     style: TextStyle(
@@ -64,31 +74,33 @@ class PlayCardButton extends StatelessWidget {
                       color: Colors.white,
                     ),
                   ),
+                  SizedBox(height: 4),
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '$cardsLeft',
+                          style: TextStyle(
+                            fontSize:
+                                Theme.of(context).textTheme.bodyLarge!.fontSize,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        TextSpan(
+                          text: ' / 52',
+                          style: TextStyle(
+                            fontSize: Theme.of(context)
+                                .textTheme
+                                .bodyMedium!
+                                .fontSize,
+                            color: Colors.white.withValues(alpha: 0.9),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
-              ),
-              SizedBox(height: 4),
-              RichText(
-                text: TextSpan(
-                  children: [
-                    TextSpan(
-                      text: '$cardsLeft',
-                      style: TextStyle(
-                        fontSize:
-                            Theme.of(context).textTheme.bodyLarge!.fontSize,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    TextSpan(
-                      text: ' / 52',
-                      style: TextStyle(
-                        fontSize:
-                            Theme.of(context).textTheme.bodyMedium!.fontSize,
-                        color: Colors.white.withValues(alpha: 0.9),
-                      ),
-                    ),
-                  ],
-                ),
               ),
             ],
           ),

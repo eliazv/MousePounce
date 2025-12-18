@@ -124,8 +124,7 @@ class FeltTableBorder extends StatelessWidget {
 /// Animated sparkle particles behind the cat player
 class SparkleBackground extends StatefulWidget {
   final int playerIndex;
-
-  const SparkleBackground({
+  SparkleBackground({
     Key? key,
     required this.playerIndex,
   }) : super(key: key);
@@ -224,7 +223,9 @@ class _SparklesPainter extends CustomPainter {
     for (var particle in particles) {
       final x = particle.x * size.width;
       final y = particle.y * size.height;
-      final opacity = (sin(animationValue * 2 * pi * particle.speed + particle.phase) + 1) / 2;
+      final opacity =
+          (sin(animationValue * 2 * pi * particle.speed + particle.phase) + 1) /
+              2;
 
       paint.color = color.withValues(alpha: color.a * opacity);
       canvas.drawCircle(
@@ -252,4 +253,45 @@ class _SparklesPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_SparklesPainter oldDelegate) => true;
+}
+
+// Helper widget to render a top-player background that can extend below
+// the player area. It selects a random image from assets/background.
+class TopPlayerBackground extends StatefulWidget {
+  final bool visible;
+
+  const TopPlayerBackground({Key? key, this.visible = false}) : super(key: key);
+
+  @override
+  State<TopPlayerBackground> createState() => _TopPlayerBackgroundState();
+}
+
+class _TopPlayerBackgroundState extends State<TopPlayerBackground> {
+  late final String _image;
+
+  String _randomBackground() {
+    final backgrounds = [
+      'assets/background/bedroom.jpg',
+      'assets/background/night-bedroom.jpg',
+    ];
+    return backgrounds[Random().nextInt(backgrounds.length)];
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _image = _randomBackground();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.visible) return const SizedBox.shrink();
+    return Image.asset(
+      _image,
+      fit: BoxFit.cover,
+      alignment: Alignment.topCenter,
+      color: Colors.black.withOpacity(0.25),
+      colorBlendMode: BlendMode.darken,
+    );
+  }
 }
