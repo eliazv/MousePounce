@@ -66,11 +66,27 @@ class PlayCardButton extends StatelessWidget {
                 ],
               ),
               SizedBox(height: 4),
-              Text(
-                '$cardsLeft left',
-                style: TextStyle(
-                  fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize,
-                  color: Colors.white.withValues(alpha: 0.9),
+              RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: '$cardsLeft',
+                      style: TextStyle(
+                        fontSize:
+                            Theme.of(context).textTheme.bodyLarge!.fontSize,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    TextSpan(
+                      text: ' / 52',
+                      style: TextStyle(
+                        fontSize:
+                            Theme.of(context).textTheme.bodyMedium!.fontSize,
+                        color: Colors.white.withValues(alpha: 0.9),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

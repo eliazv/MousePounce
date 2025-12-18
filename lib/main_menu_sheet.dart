@@ -176,6 +176,13 @@ class _MainMenuBottomSheetContentState
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.5,
                         color: foregroundColor,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withValues(alpha: 0.3),
+                            offset: Offset(1, 1),
+                            blurRadius: 2,
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -249,7 +256,7 @@ class _MainMenuBottomSheetContentState
         SizedBox(height: 24),
 
         // Main game buttons
-        bigButton('Play vs CPU', Icons.smart_toy, widget.onOnePlayer,
+        bigButton('Play vs CPU', Icons.pets, widget.onOnePlayer,
             Color(0xFF1976D2), Colors.white),
         bigButton('2 Local Players', Icons.people, widget.onTwoPlayer,
             Color.fromARGB(255, 220, 150, 10), Colors.white),
