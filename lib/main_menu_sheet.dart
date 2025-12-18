@@ -99,7 +99,11 @@ Future<void> showMainMenuBottomSheet(
         parentContext: context,
       );
     },
-  );
+  ).then((_) {
+    // Rimuovi l'overlay quando il menu principale viene chiuso
+    _watchOverlayEntry?.remove();
+    _watchOverlayEntry = null;
+  });
 }
 
 class _MainMenuBottomSheetContent extends StatefulWidget {
@@ -153,6 +157,16 @@ class _MainMenuBottomSheetContentState
   }
 
   void _openPreferences() async {
+    final overlay = Overlay.of(widget.parentContext);
+    final OverlayEntry? watchEntry = _watchOverlayEntry;
+    var removed = false;
+    if (watchEntry != null) {
+      try {
+        watchEntry.remove();
+        removed = true;
+      } catch (_) {}
+    }
+
     await showPreferencesBottomSheet(
       context,
       widget.displaySize,
@@ -165,14 +179,36 @@ class _MainMenuBottomSheetContentState
       soundPlayer: widget.soundPlayer,
       onClose: () {},
     );
+
+    if (removed && watchEntry != null && overlay != null) {
+      try {
+        overlay.insert(watchEntry);
+      } catch (_) {}
+    }
   }
 
   void _openRules() async {
+    final overlay = Overlay.of(widget.parentContext);
+    final OverlayEntry? watchEntry = _watchOverlayEntry;
+    var removed = false;
+    if (watchEntry != null) {
+      try {
+        watchEntry.remove();
+        removed = true;
+      } catch (_) {}
+    }
+
     await showRulesBottomSheet(
       context,
       widget.displaySize,
       onClose: () {},
     );
+
+    if (removed && watchEntry != null && overlay != null) {
+      try {
+        overlay.insert(watchEntry);
+      } catch (_) {}
+    }
   }
 
   @override
