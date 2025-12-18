@@ -12,3 +12,4 @@
 - fai 3 modalità, facile medio e difficile del gioco, puoi cambiare la cat slap speed e renderla fast per difificile e slow per facile , anche la penalita magari aumentala per modalita piu difficili. altro che posso integrare in difficilta diverse? dovrei fares sistema di sblocco delle modalita media e difficiie? tipo x partite vinte per sbloccare? coemle chiamo queste modalità? rendi tutto piu accatitvante , sfidante e bello peossibile per l'utnete
 - cambia stile bottone menu , piu picoclo e glass effect
 - suoni carte e musica
+- rifai grafiche gatto e tavolo da gioco

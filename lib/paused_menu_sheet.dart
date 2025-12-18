@@ -39,7 +39,7 @@ Future<void> showPausedMenuBottomSheet(BuildContext context, Size displaySize,
                         style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w800,
-                            color: Color(0xFF7A0B0B))),
+                            color: Color(0xFF1976D2))),
                   ),
                   SizedBox(height: 12),
 
@@ -55,10 +55,10 @@ Future<void> showPausedMenuBottomSheet(BuildContext context, Size displaySize,
                                 fontSize: 16, fontWeight: FontWeight.bold)),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF7A0B0B),
+                        backgroundColor: Color(0xFF1976D2),
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
+                            borderRadius: BorderRadius.circular(20)),
                         elevation: 6,
                       ),
                       onPressed: () {
@@ -73,19 +73,19 @@ Future<void> showPausedMenuBottomSheet(BuildContext context, Size displaySize,
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      icon: Icon(Icons.stop, color: Color(0xFF7A0B0B)),
+                      icon: Icon(Icons.stop, color: Color(0xFF1976D2)),
                       label: Padding(
                         padding: EdgeInsets.symmetric(vertical: 12),
                         child: Text('End Game',
                             style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF7A0B0B))),
+                                color: Color(0xFF1976D2))),
                       ),
                       style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: Color(0xFF7A0B0B), width: 2),
+                        side: BorderSide(color: Color(0xFF1976D2), width: 2),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
+                            borderRadius: BorderRadius.circular(20)),
                       ),
                       onPressed: () {
                         Navigator.of(ctx).pop();

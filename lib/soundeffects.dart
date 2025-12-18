@@ -6,6 +6,9 @@ class SoundEffectPlayer {
   final rng = Random();
   final madSoundPlayers = <AudioPlayer>[];
   final happySoundPlayers = <AudioPlayer>[];
+  AudioPlayer? deckRedrawPlayer;
+  AudioPlayer? placeCardPlayer;
+  AudioPlayer? winPlayer;
   bool enabled = false;
   bool soundsLoaded = false;
 
@@ -24,6 +27,11 @@ class SoundEffectPlayer {
     happySoundPlayers.add(await _makePlayer('boojie_happy_2.mp3'));
     happySoundPlayers.add(await _makePlayer('boojie_happy_3.mp3'));
     happySoundPlayers.add(await _makePlayer('boojie_happy_4.mp3'));
+
+    // Load new sound effects
+    deckRedrawPlayer = await _makePlayer('deck_redraw.wav');
+    placeCardPlayer = await _makePlayer('place.wav');
+    winPlayer = await _makePlayer('win.wav');
 
     soundsLoaded = true;
   }
@@ -47,6 +55,30 @@ class SoundEffectPlayer {
   void playHappySound() async {
     print("playHappySound");
     _playRandomSoundFrom(happySoundPlayers);
+  }
+
+  void playDeckRedrawSound() async {
+    if (!enabled || !soundsLoaded || deckRedrawPlayer == null) {
+      return;
+    }
+    await deckRedrawPlayer!.seek(Duration.zero);
+    await deckRedrawPlayer!.play();
+  }
+
+  void playPlaceCardSound() async {
+    if (!enabled || !soundsLoaded || placeCardPlayer == null) {
+      return;
+    }
+    await placeCardPlayer!.seek(Duration.zero);
+    await placeCardPlayer!.play();
+  }
+
+  void playWinSound() async {
+    if (!enabled || !soundsLoaded || winPlayer == null) {
+      return;
+    }
+    await winPlayer!.seek(Duration.zero);
+    await winPlayer!.play();
   }
 }
 

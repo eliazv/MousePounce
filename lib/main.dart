@@ -12,6 +12,9 @@ import 'game.dart';
 import 'main_menu_sheet.dart';
 import 'paused_menu_sheet.dart';
 import 'types.dart';
+import 'ui_widgets.dart';
+import 'animation_helpers.dart';
+import 'haptic_feedback_manager.dart';
 
 const appTitle = "Egyptian Mouse Pounce";
 const appVersion = "1.4.0";
@@ -45,22 +48,6 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-enum AnimationMode {
-  none,
-  play_card_back,
-  play_card_front,
-  ai_slap,
-  waiting_to_move_pile,
-  pile_to_winner,
-  illegal_slap,
-}
-
-const cardAspectRatio = 521.0 / 726;
-
-const illegalSlapAnimationDuration = Duration(milliseconds: 600);
-const moodDuration = Duration(milliseconds: 5000);
-const moodFadeMillis = 500;
-
 enum AIMode { human_vs_human, human_vs_ai, ai_vs_ai }
 
 enum DialogMode {
@@ -72,14 +59,6 @@ enum DialogMode {
   statistics,
   animation_speed_warning,
 }
-
-enum AIMood { none, happy, very_happy, angry }
-
-final aiMoodImages = {
-  AIMood.happy: 'bubble_happy.png',
-  AIMood.very_happy: 'bubble_grin.png',
-  AIMood.angry: 'bubble_mad.png',
-};
 
 final dialogBackgroundColor = Color.fromARGB(0xd0, 0xd8, 0xd8, 0xd8);
 const dialogTableBackgroundColor = Color.fromARGB(0x80, 0xc0, 0xc0, 0xc0);
@@ -186,6 +165,8 @@ class _MyHomePageState extends State<MyHomePage> {
       penaltyCard = null;
       penaltyCardPlayed = false;
     });
+    // Play card placement sound
+    soundPlayer.playPlaceCardSound();
   }
 
   bool _shouldAiPlayCard() {
@@ -327,9 +308,16 @@ class _MyHomePageState extends State<MyHomePage> {
   void _movePileToWinner() {
     final cardsWon = [...game.pileCards];
     game.movePileToPlayer(pileMovingToPlayer!);
+
+    // Play deck redraw sound and trigger haptic feedback when taking cards
+    soundPlayer.playDeckRedrawSound();
+    HapticFeedbackManager.triggerCardTakeVibration();
+
     int? winner = game.gameWinner();
     if (winner != null) {
       _updateAiMoodsForGameWinner(winner);
+      // Play win sound
+      soundPlayer.playWinSound();
       if (aiMode == AIMode.ai_vs_ai) {
         Future.delayed(const Duration(milliseconds: 2000), () {
           setState(() {
@@ -427,156 +415,33 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Widget _playerStatusWidget(
       final Game game, final int playerIndex, final Size displaySize) {
-    final enabled = game.canPlayCard(playerIndex);
-    return Transform.rotate(
-        angle: (playerIndex == 1) ? pi : 0,
-        child: Padding(
-            padding: EdgeInsets.all(0.025 * displaySize.height),
-            child: ElevatedButton(
-              onPressed:
-                  enabled ? (() => _playCardIfPlayerTurn(playerIndex)) : null,
-              child: Padding(
-                  padding: EdgeInsets.all(10),
-                  child: Text(
-                      'Play card: ${game.playerCards[playerIndex].length} left',
-                      style: TextStyle(
-                        fontSize: Theme.of(context)
-                            .textTheme
-                            .headlineMedium!
-                            .fontSize,
-                        color: enabled ? Colors.green : Colors.grey,
-                      ))),
-            )));
+    return PlayCardButton(
+      game: game,
+      playerIndex: playerIndex,
+      onPressed: () => _playCardIfPlayerTurn(playerIndex),
+      displaySize: displaySize,
+    );
   }
 
   Widget _aiPlayerWidget(
       final Game game, final int playerIndex, final Size displaySize) {
-    final moodImage = aiMoodImages[aiMoods[playerIndex]];
-    return Transform.rotate(
-      angle: playerIndex == 1 ? 0 : pi,
-      child: Stack(
-        children: [
-          Positioned.fill(
-              child: Transform.translate(
-                  offset: Offset(0, 10),
-                  child: Image(
-                    image: AssetImage(
-                        'assets/cats/cat${catImageNumbers[playerIndex]}.png'),
-                    fit: BoxFit.fitHeight,
-                    alignment: Alignment.center,
-                  ))),
-
-          // Fade mood bubbles in and out.
-          if (moodImage != null)
-            Positioned.fill(
-              top: 5,
-              bottom: 40,
-              child: Transform.translate(
-                  offset: Offset(110, 0),
-                  child: TweenAnimationBuilder(
-                    tween: Tween(
-                        begin: 0.0,
-                        end: moodDuration.inMilliseconds.toDouble()),
-                    duration: moodDuration,
-                    onEnd: () =>
-                        setState(() => aiMoods = [AIMood.none, AIMood.none]),
-                    child: Image(
-                      image: AssetImage('assets/cats/$moodImage'),
-                      fit: BoxFit.fitHeight,
-                      alignment: Alignment.center,
-                    ),
-                    builder: (BuildContext context, double animMillis,
-                        Widget? child) {
-                      double op = 1.0;
-                      if (animMillis < moodFadeMillis) {
-                        op = animMillis / moodFadeMillis;
-                      } else if (animMillis >
-                          moodDuration.inMilliseconds - moodFadeMillis) {
-                        op = (moodDuration.inMilliseconds - animMillis) /
-                            moodFadeMillis;
-                      }
-                      return Opacity(
-                        opacity: op,
-                        child: child,
-                      );
-                    },
-                  )),
-            ),
-        ],
-      ),
+    return AIPlayerWidget(
+      playerIndex: playerIndex,
+      mood: aiMoods[playerIndex],
+      catImageNumber: catImageNumbers[playerIndex],
+      onMoodEnd: () => setState(() => aiMoods = [AIMood.none, AIMood.none]),
     );
-  }
-
-  Widget _cardImage(final PlayingCard card) {
-    return LayoutBuilder(builder: (context, constraints) {
-      double width = constraints.maxWidth;
-      double height = constraints.maxHeight;
-      double viewAspectRatio = width / height;
-
-      final cardRect = (() {
-        if (viewAspectRatio > cardAspectRatio) {
-          // Full height, centered width.
-          double cardWidth = height * cardAspectRatio;
-          return Rect.fromLTWH(width / 2 - cardWidth / 2, 0, cardWidth, height);
-          // return Rect.fromLTWH(0, 0, width, height);
-        } else {
-          // Full width, centered height.
-          double cardHeight = width / cardAspectRatio;
-          return Rect.fromLTWH(
-              0, height / 2 - cardHeight / 2, width, cardHeight);
-        }
-      })();
-
-      // For some reason Stack doesn't work as a child of Positioned.
-      return Stack(children: [
-        Positioned.fromRect(
-          rect: cardRect,
-          child: Image(
-            image: AssetImage(_imagePathForCard(card)),
-            fit: BoxFit.contain,
-            alignment: Alignment.center,
-          ),
-        ),
-        Positioned.fromRect(
-          rect: cardRect,
-          child: Container(
-              decoration: BoxDecoration(
-            border: Border.all(
-              color: const Color.fromRGBO(64, 64, 64, 1),
-              width: 1,
-            ),
-            borderRadius: BorderRadius.circular(cardRect.width * 0.04),
-          )),
-        ),
-      ]);
-    });
   }
 
   Widget _pileCardWidget(final PileCard pc, final Size displaySize,
       {final rotationFrac = 1.0}) {
-    final minDim = min(displaySize.width, displaySize.height);
-    final maxOffset = minDim * 0.1;
-    return Container(
-        height: double.infinity,
-        width: double.infinity,
-        child: Transform.translate(
-            offset: Offset(pc.xOffset * maxOffset, pc.yOffset * maxOffset),
-            child: Transform.rotate(
-              angle: pc.rotation * rotationFrac * pi / 12,
-              child: FractionallySizedBox(
-                alignment: Alignment.center,
-                heightFactor: 0.7,
-                widthFactor: 0.7,
-                child: GestureDetector(
-                  onTapDown: (TapDownDetails tap) {
-                    if (dialogMode == DialogMode.none) {
-                      _doSlap(tap.globalPosition, displaySize.height);
-                    }
-                  },
-                  child: _cardImage(pc.card),
-                ),
-              ),
-            )));
+    return PileCardWidget(
+      pileCard: pc,
+      displaySize: displaySize,
+      rotationFrac: rotationFrac,
+      onTapDown: dialogMode == DialogMode.none ? _doSlap : null,
+      cardImagePath: _imagePathForCard(pc.card),
+    );
   }
 
   List<Widget> _pileCardWidgets(
@@ -708,51 +573,12 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget _noSlapWidget(final int playerIndex, final Size displaySize) {
-    int numTimeoutCards = game.slapTimeoutCardsForPlayer(playerIndex);
-    if (numTimeoutCards <= 0) {
-      return SizedBox.shrink();
-    }
-    final minDim = min(displaySize.width, displaySize.height);
-    final size = min(minDim * 0.2, 100.0);
-    final padding = 10.0;
-    return Positioned(
-        left: playerIndex == 0 ? padding : null,
-        bottom: playerIndex == 0 ? padding : null,
-        right: playerIndex == 0 ? null : padding,
-        top: playerIndex == 0 ? null : padding,
-        child: Transform.rotate(
-            angle: playerIndex == 1 ? pi : 0,
-            child: Stack(
-              children: [
-                SizedBox(
-                    width: size,
-                    height: size,
-                    child: Image(
-                        image: AssetImage(
-                            'assets/cats/paw${catImageNumbers[playerIndex]}.png'))),
-                SizedBox(
-                    width: size,
-                    height: size,
-                    child: Image(image: AssetImage('assets/misc/no.png'))),
-                Padding(
-                  padding: EdgeInsets.only(left: size * 0.55, top: size * 0.55),
-                  child: SizedBox(
-                    width: size * 0.45,
-                    height: size * 0.45,
-                    child: TextButton(
-                        style: TextButton.styleFrom(
-                          shape: CircleBorder(),
-                          // primary: Colors.blue,
-                          backgroundColor: Colors.white,
-                        ),
-                        onPressed: () {},
-                        child: Text(numTimeoutCards.toString(),
-                            style:
-                                TextStyle(fontSize: size * 0.24, height: 0))),
-                  ),
-                ),
-              ],
-            )));
+    return NoSlapIndicator(
+      playerIndex: playerIndex,
+      numTimeoutCards: game.slapTimeoutCardsForPlayer(playerIndex),
+      displaySize: displaySize,
+      catImageNumber: catImageNumbers[playerIndex],
+    );
   }
 
   Widget _paddingAll(final double paddingPx, final Widget child) {
