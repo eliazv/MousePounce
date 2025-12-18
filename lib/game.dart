@@ -11,6 +11,15 @@ extension SuitExtension on Suit {
       case Suit.spades: return 'S';
     }
   }
+
+  String get svgName {
+    switch (this) {
+      case Suit.clubs: return 'CLUB';
+      case Suit.diamonds: return 'DIAMOND';
+      case Suit.hearts: return 'HEART';
+      case Suit.spades: return 'SPADE';
+    }
+  }
 }
 
 enum Rank {two, three, four, five, six, seven, eight, nine, ten, jack, queen, king, ace}
@@ -32,6 +41,17 @@ extension RankExtension on Rank {
         return this.numericValue.toString();
     }
   }
+
+  String get svgNumber {
+    switch (this) {
+      case Rank.ace: return '1';
+      case Rank.jack: return '11-JACK';
+      case Rank.queen: return '12-QUEEN';
+      case Rank.king: return '13-KING';
+      default:
+        return this.numericValue.toString();
+    }
+  }
 }
 
 // "Card" is a Flutter UI class, PlayingCard avoids having to disambiguate.
@@ -43,6 +63,10 @@ class PlayingCard {
 
   String asciiString() {
     return this.rank.asciiChar + this.suit.asciiChar;
+  }
+
+  String svgPath() {
+    return 'assets/faces/${this.suit.svgName}-${this.rank.svgNumber}.svg';
   }
 }
 

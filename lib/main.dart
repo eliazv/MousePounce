@@ -148,16 +148,12 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   String _imagePathForCard(final PlayingCard card) {
-    return 'assets/cards/${card.asciiString()}.webp';
+    return card.svgPath(); // Use SVG from assets/faces
   }
 
   void _preloadCardImages() {
-    for (Rank r in Rank.values) {
-      for (Suit s in Suit.values) {
-        precacheImage(
-            AssetImage(_imagePathForCard(PlayingCard(r, s))), context);
-      }
-    }
+    // SVG files don't need preloading like raster images
+    // They are loaded on demand and cached automatically
   }
 
   void _playCard() {

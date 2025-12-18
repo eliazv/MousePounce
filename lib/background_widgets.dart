@@ -77,13 +77,14 @@ class FeltTableBorder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Outer border more rounded (30), inner borders progressively less rounded (20, 15)
     return Container(
       decoration: BoxDecoration(
         border: Border.all(
           color: const Color.fromARGB(255, 139, 69, 19), // Saddle brown
           width: borderWidth,
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(30),
         boxShadow: [
           // Inner shadow effect
           BoxShadow(
@@ -100,7 +101,7 @@ class FeltTableBorder extends StatelessWidget {
             color: const Color.fromARGB(255, 184, 134, 11), // Dark goldenrod
             width: 3,
           ),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(20),
         ),
         child: Container(
           decoration: BoxDecoration(
@@ -108,10 +109,10 @@ class FeltTableBorder extends StatelessWidget {
               color: const Color.fromARGB(255, 160, 82, 45), // Sienna
               width: 2,
             ),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(15),
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(15),
             child: child,
           ),
         ),

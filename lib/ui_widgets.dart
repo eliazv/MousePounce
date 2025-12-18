@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'game.dart';
 
 const cardAspectRatio = 521.0 / 726;
@@ -107,6 +108,8 @@ class CardImageWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isSvg = imagePath.endsWith('.svg');
+
     return LayoutBuilder(builder: (context, constraints) {
       double width = constraints.maxWidth;
       double height = constraints.maxHeight;
@@ -125,13 +128,25 @@ class CardImageWidget extends StatelessWidget {
         }
       })();
 
+      // Very rounded corners with subtle gray border (increased to 0.15)
+      final borderRadius = BorderRadius.circular(cardRect.width * 0.15);
+
       return Stack(children: [
         Positioned.fromRect(
           rect: cardRect,
-          child: Image(
-            image: AssetImage(imagePath),
-            fit: BoxFit.contain,
-            alignment: Alignment.center,
+          child: ClipRRect(
+            borderRadius: borderRadius,
+            child: isSvg
+                ? SvgPicture.asset(
+                    imagePath,
+                    fit: BoxFit.contain,
+                    alignment: Alignment.center,
+                  )
+                : Image(
+                    image: AssetImage(imagePath),
+                    fit: BoxFit.contain,
+                    alignment: Alignment.center,
+                  ),
           ),
         ),
         Positioned.fromRect(
@@ -139,10 +154,10 @@ class CardImageWidget extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(
               border: Border.all(
-                color: const Color.fromRGBO(64, 64, 64, 1),
-                width: 1,
+                color: Colors.grey.shade400,
+                width: 1.0,
               ),
-              borderRadius: BorderRadius.circular(cardRect.width * 0.04),
+              borderRadius: borderRadius,
             ),
           ),
         ),

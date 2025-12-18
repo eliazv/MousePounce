@@ -1,6 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'soundeffects.dart';
 import 'game.dart';
 import 'types.dart';
@@ -52,7 +54,7 @@ Future<void> showMainMenuBottomSheet(
   );
 }
 
-enum _MenuView { main, preferences }
+enum _MenuView { main, preferences, rules }
 
 class _MainMenuBottomSheetContent extends StatefulWidget {
   final Size displaySize;
@@ -100,6 +102,10 @@ class _MainMenuBottomSheetContentState
     setState(() => _currentView = _MenuView.preferences);
   }
 
+  void _navigateToRules() {
+    setState(() => _currentView = _MenuView.rules);
+  }
+
   void _navigateToMain() {
     setState(() => _currentView = _MenuView.main);
   }
@@ -128,7 +134,9 @@ class _MainMenuBottomSheetContentState
                 ),
                 child: _currentView == _MenuView.main
                     ? _buildMainMenu(context)
-                    : _buildPreferencesMenu(context),
+                    : _currentView == _MenuView.preferences
+                        ? _buildPreferencesMenu(context)
+                        : _buildRulesMenu(context),
               ),
             ),
           ),
@@ -276,31 +284,7 @@ class _MainMenuBottomSheetContentState
             ),
             SizedBox(width: 8),
             Expanded(
-              child: FilledButton(
-                style: FilledButton.styleFrom(
-                  padding:
-                      EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
-                  backgroundColor: Colors.white.withValues(alpha: 0.9),
-                  foregroundColor: Colors.black87,
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20)),
-                  textStyle:
-                      TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                ),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  widget.onAbout(widget.parentContext);
-                },
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.info_outline, size: 16),
-                    SizedBox(width: 6),
-                    Text('About'),
-                  ],
-                ),
-              ),
+              child: smallButton('Rules', Icons.menu_book, _navigateToRules),
             ),
           ],
         ),
@@ -546,6 +530,120 @@ class _MainMenuBottomSheetContentState
                       makeSlapPenaltyRow(),
                       SizedBox(height: 16),
                     ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        // Back button
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Color(0xFF1976D2),
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(vertical: 14),
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              textStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
+            onPressed: _navigateToMain,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.check_rounded, size: 18),
+                SizedBox(width: 8),
+                Text('Done'),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRulesMenu(BuildContext context) {
+    final titleFontSize = 18.0;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Header with back button
+        Padding(
+          padding: EdgeInsets.only(left: 4, right: 16, top: 4, bottom: 8),
+          child: Row(
+            children: [
+              IconButton(
+                icon: Icon(Icons.arrow_back_rounded, color: Colors.white),
+                onPressed: _navigateToMain,
+                visualDensity: VisualDensity.compact,
+              ),
+              Text(
+                'Game Rules',
+                style: TextStyle(
+                  fontSize: titleFontSize,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Scrollable content with white background
+        Flexible(
+          child: Container(
+            margin: EdgeInsets.symmetric(horizontal: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Scrollbar(
+              thumbVisibility: true,
+              radius: Radius.circular(8),
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: FutureBuilder<String>(
+                    future: DefaultAssetBundle.of(context)
+                        .loadString('assets/doc/about.md'),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData) {
+                        // Remove email contact line
+                        String content = snapshot.data!;
+                        content = content.replaceFirst(
+                            RegExp(r'^Comments or bug reports:.*\n\n?',
+                                multiLine: true),
+                            '');
+
+                        return MarkdownBody(
+                          data: content,
+                          styleSheet: MarkdownStyleSheet(
+                            h2: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1976D2),
+                            ),
+                            p: TextStyle(fontSize: 13, color: Colors.black87),
+                            listBullet:
+                                TextStyle(fontSize: 13, color: Colors.black87),
+                          ),
+                          onTapLink: (text, href, title) =>
+                              launch(href ?? ''),
+                          listItemCrossAxisAlignment:
+                              MarkdownListItemCrossAxisAlignment.start,
+                        );
+                      } else if (snapshot.hasError) {
+                        return Text('Error loading rules',
+                            style: TextStyle(color: Colors.red));
+                      } else {
+                        return Center(child: CircularProgressIndicator());
+                      }
+                    },
                   ),
                 ),
               ),
