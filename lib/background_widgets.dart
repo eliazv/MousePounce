@@ -259,15 +259,17 @@ class _SparklesPainter extends CustomPainter {
 // the player area. It selects a random image from assets/background.
 class TopPlayerBackground extends StatefulWidget {
   final bool visible;
+  final String? imagePath;
 
-  const TopPlayerBackground({Key? key, this.visible = false}) : super(key: key);
+  const TopPlayerBackground({Key? key, this.visible = false, this.imagePath})
+      : super(key: key);
 
   @override
   State<TopPlayerBackground> createState() => _TopPlayerBackgroundState();
 }
 
 class _TopPlayerBackgroundState extends State<TopPlayerBackground> {
-  late final String _image;
+  late String _image;
 
   String _randomBackground() {
     final backgrounds = [
@@ -280,7 +282,17 @@ class _TopPlayerBackgroundState extends State<TopPlayerBackground> {
   @override
   void initState() {
     super.initState();
-    _image = _randomBackground();
+    _image = widget.imagePath ?? _randomBackground();
+  }
+
+  @override
+  void didUpdateWidget(covariant TopPlayerBackground oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.imagePath != oldWidget.imagePath) {
+      setState(() {
+        _image = widget.imagePath ?? _image;
+      });
+    }
   }
 
   @override

@@ -69,6 +69,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Random rng = Random();
   late final SharedPreferences preferences;
   Game game = Game();
+  late List<String> playerBackgrounds;
   AnimationMode animationMode = AnimationMode.none;
   AIMode aiMode = AIMode.ai_vs_ai;
   DialogMode dialogMode = DialogMode.none;
@@ -83,6 +84,10 @@ class _MyHomePageState extends State<MyHomePage> {
   List<AIMood> aiMoods = [AIMood.none, AIMood.none];
   AISlapSpeed aiSlapSpeed = AISlapSpeed.medium;
   final numCatImages = 4;
+  final List<String> _backgroundOptions = [
+    'assets/background/bedroom.jpg',
+    'assets/background/night-bedroom.jpg',
+  ];
   SoundEffectPlayer soundPlayer = SoundEffectPlayer();
   bool menuButtonVisible =
       false; // show FAB only when sheet closed via 'Watch the cats'
@@ -93,6 +98,7 @@ class _MyHomePageState extends State<MyHomePage> {
     super.initState();
     game = Game(rng: rng);
     catImageNumbers = _randomCatImageNumbers();
+    playerBackgrounds = _randomPlayerBackgrounds(catImageNumbers.length);
     penaltyCard = null;
     soundPlayer.init();
     _readPreferencesAndStartGame();
@@ -147,6 +153,11 @@ class _MyHomePageState extends State<MyHomePage> {
     int c1 = rng.nextInt(numCatImages);
     int c2 = (c1 + 1 + rng.nextInt(numCatImages - 1)) % numCatImages;
     return [c1 + 1, c2 + 1];
+  }
+
+  List<String> _randomPlayerBackgrounds(int count) {
+    return List.generate(count,
+        (_) => _backgroundOptions[rng.nextInt(_backgroundOptions.length)]);
   }
 
   String _imagePathForCard(final PlayingCard card) {
@@ -647,6 +658,7 @@ class _MyHomePageState extends State<MyHomePage> {
       menuButtonVisible = false;
       animationMode = AnimationMode.none;
       catImageNumbers = _randomCatImageNumbers();
+      playerBackgrounds = _randomPlayerBackgrounds(catImageNumbers.length);
       aiSlapCounter++;
       game.startGame();
     });
@@ -1126,6 +1138,10 @@ class _MyHomePageState extends State<MyHomePage> {
                       height: playerHeight + 30,
                       child: TopPlayerBackground(
                         visible: aiMode != AIMode.human_vs_human,
+                        imagePath: (playerBackgrounds.isNotEmpty &&
+                                playerBackgrounds.length > 1)
+                            ? playerBackgrounds[1]
+                            : null,
                       ),
                     ),
                     // Top player area with sparkle background
@@ -1144,6 +1160,20 @@ class _MyHomePageState extends State<MyHomePage> {
                                   ? _playerStatusWidget(game, 1, displaySize)
                                   : _aiPlayerWidget(game, 1, displaySize)),
                         ],
+                      ),
+                    ),
+                    // Bottom-player background that extends above the table by 30px.
+                    Positioned(
+                      left: 0,
+                      width: displaySize.width,
+                      top: displaySize.height - playerHeight - 30,
+                      // extend 30px above the player area so it goes "sopra il tavolo"
+                      height: playerHeight + 30,
+                      child: TopPlayerBackground(
+                        visible: aiMode != AIMode.human_vs_human,
+                        imagePath: (playerBackgrounds.isNotEmpty)
+                            ? playerBackgrounds[0]
+                            : null,
                       ),
                     ),
                     // Bottom player area with sparkle background

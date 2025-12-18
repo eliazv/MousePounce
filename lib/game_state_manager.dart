@@ -34,6 +34,11 @@ class GameStateManager extends ChangeNotifier {
   late List<int> catImageNumbers;
   List<AIMood> aiMoods = [AIMood.none, AIMood.none];
   AISlapSpeed aiSlapSpeed = AISlapSpeed.medium;
+  late List<String> playerBackgrounds;
+  final List<String> _backgroundOptions = [
+    'assets/background/bedroom.jpg',
+    'assets/background/night-bedroom.jpg',
+  ];
   final numCatImages = 4;
   SoundEffectPlayer soundPlayer = SoundEffectPlayer();
   bool menuButtonVisible = false;
@@ -49,6 +54,7 @@ class GameStateManager extends ChangeNotifier {
   GameStateManager() {
     game = Game(rng: rng);
     catImageNumbers = _randomCatImageNumbers();
+    playerBackgrounds = _randomPlayerBackgrounds(catImageNumbers.length);
     penaltyCard = null;
     soundPlayer.init();
   }
@@ -57,6 +63,11 @@ class GameStateManager extends ChangeNotifier {
     int c1 = rng.nextInt(numCatImages);
     int c2 = (c1 + 1 + rng.nextInt(numCatImages - 1)) % numCatImages;
     return [c1 + 1, c2 + 1];
+  }
+
+  List<String> _randomPlayerBackgrounds(int count) {
+    return List.generate(count,
+        (_) => _backgroundOptions[rng.nextInt(_backgroundOptions.length)]);
   }
 
   void readPreferencesAndStartGame(SharedPreferences preferences) {
@@ -116,7 +127,8 @@ class GameStateManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateAiMoodsForPile(final List<PileCard> pileCards, final int pileWinner) {
+  void updateAiMoodsForPile(
+      final List<PileCard> pileCards, final int pileWinner) {
     if (aiHasMoodForPile(pileCards)) {
       var moods = pileWinner == 0
           ? [AIMood.happy, AIMood.angry]
@@ -166,6 +178,7 @@ class GameStateManager extends ChangeNotifier {
     menuButtonVisible = false;
     animationMode = AnimationMode.none;
     catImageNumbers = _randomCatImageNumbers();
+    playerBackgrounds = _randomPlayerBackgrounds(catImageNumbers.length);
     aiSlapCounter++;
     game.startGame();
     notifyListeners();
