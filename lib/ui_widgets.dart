@@ -122,7 +122,9 @@ class CardImageWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isSvg = imagePath.endsWith('.svg');
 
-    return LayoutBuilder(builder: (context, constraints) {
+    // RepaintBoundary prevents unnecessary repainting of card images
+    return RepaintBoundary(
+      child: LayoutBuilder(builder: (context, constraints) {
       double width = constraints.maxWidth;
       double height = constraints.maxHeight;
       double viewAspectRatio = width / height;
@@ -153,11 +155,33 @@ class CardImageWidget extends StatelessWidget {
                     imagePath,
                     fit: BoxFit.cover,
                     alignment: Alignment.center,
+                    placeholderBuilder: (context) => Container(
+                      color: Colors.white,
+                    ),
                   )
                 : Image(
                     image: AssetImage(imagePath),
                     fit: BoxFit.cover,
                     alignment: Alignment.center,
+                    frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                      if (wasSynchronouslyLoaded) {
+                        return child;
+                      }
+                      return AnimatedOpacity(
+                        opacity: frame == null ? 0 : 1,
+                        duration: const Duration(milliseconds: 100),
+                        curve: Curves.easeOut,
+                        child: child,
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Colors.white,
+                        child: Center(
+                          child: Icon(Icons.error, color: Colors.red),
+                        ),
+                      );
+                    },
                   ),
           ),
         ),
@@ -174,7 +198,8 @@ class CardImageWidget extends StatelessWidget {
           ),
         ),
       ]);
-    });
+    }),
+    );
   }
 }
 

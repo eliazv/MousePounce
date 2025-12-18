@@ -142,6 +142,16 @@ class _MainMenuBottomSheetContent extends StatefulWidget {
 
 class _MainMenuBottomSheetContentState
     extends State<_MainMenuBottomSheetContent> {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Preload logo image when menu is shown
+    precacheImage(
+      AssetImage('assets/logo/slapcards-write.png'),
+      context,
+    );
+  }
+
   void _openPreferences() async {
     await showPreferencesBottomSheet(
       context,

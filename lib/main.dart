@@ -164,9 +164,66 @@ class _MyHomePageState extends State<MyHomePage> {
     return card.svgPath(); // Use SVG from assets/faces
   }
 
-  void _preloadCardImages() {
-    // SVG files don't need preloading like raster images
-    // They are loaded on demand and cached automatically
+  void _preloadCardImages() async {
+    // Preload all PNG images (cats, icons, backgrounds, etc.)
+    final pngAssets = [
+      // Cat images
+      'assets/cats/cat1.png',
+      'assets/cats/cat2.png',
+      'assets/cats/cat3.png',
+      'assets/cats/cat4.png',
+      // Cat paws
+      'assets/cats/paw1.png',
+      'assets/cats/paw2.png',
+      'assets/cats/paw3.png',
+      'assets/cats/paw4.png',
+      // Mood bubbles
+      'assets/cats/bubble_happy.png',
+      'assets/cats/bubble_grin.png',
+      'assets/cats/bubble_mad.png',
+      // Icons and misc
+      'assets/icons/cards.png',
+      'assets/misc/no.png',
+      'assets/logo/slapcards-write.png',
+      // Backgrounds
+      'assets/background/bedroom.jpg',
+      'assets/background/night-bedroom.jpg',
+    ];
+
+    // Preload galline and gatti if they exist
+    for (int i = 1; i <= 10; i++) {
+      pngAssets.add('assets/galline/gallina$i.png');
+      pngAssets.add('assets/gatti/gatto$i.png');
+    }
+
+    // Special gatti
+    pngAssets.add('assets/gatti/gatto-bar.png');
+
+    // Preload all PNG/JPG images
+    for (final asset in pngAssets) {
+      try {
+        await precacheImage(AssetImage(asset), context);
+      } catch (e) {
+        // Ignore errors for optional assets that might not exist
+      }
+    }
+
+    // Preload all SVG card faces
+    final suits = ['CLUB', 'DIAMOND', 'HEART', 'SPADE'];
+    final ranks = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11-JACK', '12-QUEEN', '13-KING'];
+
+    for (final suit in suits) {
+      for (final rank in ranks) {
+        final path = 'assets/faces/$suit-$rank.svg';
+        try {
+          // For SVG files, we need to ensure they're in the asset bundle
+          // The actual preloading happens when SvgPicture first renders them
+          await DefaultAssetBundle.of(context).load(path);
+        } catch (e) {
+          // Ignore errors for missing assets
+        }
+      }
+    }
   }
 
   void _playCard() {
