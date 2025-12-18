@@ -3,7 +3,7 @@
   - rendili bottom sheet stile glass quindi traslucide che si vede un po di sfondo
 - banner ads
 - migliroa grafica gioco tappetino e gatti
-- da com.dozingcatsoftware.mouse_pounce a com.eliazavatta.slapcards
+- da com.eliazavatta.slapcards a com.eliazavatta.slapcards
 - titolo del gioco deve essere "Slap Cards: Egyptian Rat Screw"
 - bottone che apre regole rules.md
 - altri nomi: Egyptian Rat Screw / ERS, Slapjack, Beggar-my-neighbour, Egyptian War varianti.md
@@ -12,4 +12,4 @@
 - fai 3 modalità, facile medio e difficile del gioco, puoi cambiare la cat slap speed e renderla fast per difificile e slow per facile , anche la penalita magari aumentala per modalita piu difficili. altro che posso integrare in difficilta diverse? dovrei fares sistema di sblocco delle modalita media e difficiie? tipo x partite vinte per sbloccare? coemle chiamo queste modalità? rendi tutto piu accatitvante , sfidante e bello peossibile per l'utnete
 - cambia stile bottone menu , piu picoclo e glass effect
 - suoni carte e musica
-- rifai grafiche gatto e tavolo da gioco. al posto di pensieri che comapiono cambia l'espressione
+- rifai grafiche gatto e tavolo da gioco. al posto di pensieri che comapiono cambia l'espressione. sfondo sietro gatto

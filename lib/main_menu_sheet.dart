@@ -21,6 +21,7 @@ Future<void> showMainMenuBottomSheet(
   required AISlapSpeed aiSlapSpeed,
   required Function(AISlapSpeed) onAiSlapSpeedChanged,
   required Function(bool) onSoundEnabledChanged,
+  required Function(bool) onMusicEnabledChanged,
   required SoundEffectPlayer soundPlayer,
 }) {
   return showModalBottomSheet<void>(
@@ -43,6 +44,7 @@ Future<void> showMainMenuBottomSheet(
         aiSlapSpeed: aiSlapSpeed,
         onAiSlapSpeedChanged: onAiSlapSpeedChanged,
         onSoundEnabledChanged: onSoundEnabledChanged,
+        onMusicEnabledChanged: onMusicEnabledChanged,
         soundPlayer: soundPlayer,
         parentContext: context,
       );
@@ -64,6 +66,7 @@ class _MainMenuBottomSheetContent extends StatefulWidget {
   final AISlapSpeed aiSlapSpeed;
   final Function(AISlapSpeed) onAiSlapSpeedChanged;
   final Function(bool) onSoundEnabledChanged;
+  final Function(bool) onMusicEnabledChanged;
   final SoundEffectPlayer soundPlayer;
   final BuildContext parentContext;
 
@@ -79,6 +82,7 @@ class _MainMenuBottomSheetContent extends StatefulWidget {
     required this.aiSlapSpeed,
     required this.onAiSlapSpeedChanged,
     required this.onSoundEnabledChanged,
+    required this.onMusicEnabledChanged,
     required this.soundPlayer,
     required this.parentContext,
   });
@@ -475,13 +479,13 @@ class _MainMenuBottomSheetContentState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // General settings
-                      sectionTitle('GENERAL'),
+                      sectionTitle('AUDIO'),
                       CheckboxListTile(
                         dense: true,
                         contentPadding:
                             EdgeInsets.symmetric(horizontal: 16, vertical: 0),
                         visualDensity: VisualDensity.compact,
-                        title: Text("Enable sound",
+                        title: Text("Enable sound effects",
                             style:
                                 TextStyle(fontSize: 13, color: Colors.black87)),
                         value: widget.soundPlayer.enabled,
@@ -493,7 +497,26 @@ class _MainMenuBottomSheetContentState
                           });
                         },
                       ),
+                      CheckboxListTile(
+                        dense: true,
+                        contentPadding:
+                            EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                        visualDensity: VisualDensity.compact,
+                        title: Text("Enable background music",
+                            style:
+                                TextStyle(fontSize: 13, color: Colors.black87)),
+                        value: widget.soundPlayer.musicEnabled,
+                        activeColor: Color(0xFF1976D2),
+                        checkColor: Colors.white,
+                        onChanged: (bool? checked) {
+                          setState(() {
+                            widget.onMusicEnabledChanged(checked == true);
+                          });
+                        },
+                      ),
                       SizedBox(height: 8),
+
+                      sectionTitle('AI DIFFICULTY'),
                       makeAiSpeedRow(),
 
                       Divider(color: Colors.black12, height: 24),

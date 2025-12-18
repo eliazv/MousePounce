@@ -9,7 +9,9 @@ class SoundEffectPlayer {
   AudioPlayer? deckRedrawPlayer;
   AudioPlayer? placeCardPlayer;
   AudioPlayer? winPlayer;
+  AudioPlayer? backgroundMusicPlayer;
   bool enabled = false;
+  bool musicEnabled = false;
   bool soundsLoaded = false;
 
   void init() async {
@@ -32,6 +34,12 @@ class SoundEffectPlayer {
     deckRedrawPlayer = await _makePlayer('deck_redraw.wav');
     placeCardPlayer = await _makePlayer('place.wav');
     winPlayer = await _makePlayer('win.wav');
+
+    // Load background music
+    backgroundMusicPlayer = AudioPlayer();
+    await backgroundMusicPlayer!.setAsset('assets/music/lofi.mp3');
+    await backgroundMusicPlayer!.setLoopMode(LoopMode.one);
+    await backgroundMusicPlayer!.setVolume(0.3);
 
     soundsLoaded = true;
   }
@@ -79,6 +87,43 @@ class SoundEffectPlayer {
     }
     await winPlayer!.seek(Duration.zero);
     await winPlayer!.play();
+  }
+
+  void startBackgroundMusic() async {
+    if (!soundsLoaded || backgroundMusicPlayer == null) {
+      return;
+    }
+    if (musicEnabled && !backgroundMusicPlayer!.playing) {
+      await backgroundMusicPlayer!.play();
+    }
+  }
+
+  void stopBackgroundMusic() async {
+    if (backgroundMusicPlayer != null && backgroundMusicPlayer!.playing) {
+      await backgroundMusicPlayer!.pause();
+    }
+  }
+
+  void setMusicEnabled(bool enabled) {
+    musicEnabled = enabled;
+    if (enabled) {
+      startBackgroundMusic();
+    } else {
+      stopBackgroundMusic();
+    }
+  }
+
+  void dispose() {
+    for (var player in madSoundPlayers) {
+      player.dispose();
+    }
+    for (var player in happySoundPlayers) {
+      player.dispose();
+    }
+    deckRedrawPlayer?.dispose();
+    placeCardPlayer?.dispose();
+    winPlayer?.dispose();
+    backgroundMusicPlayer?.dispose();
   }
 }
 

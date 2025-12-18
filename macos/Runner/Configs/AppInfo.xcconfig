@@ -8,7 +8,7 @@
 PRODUCT_NAME = mouse_pounce
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.dozingcatsoftware.mousePounce
+PRODUCT_BUNDLE_IDENTIFIER = com.eliazavatta.slapcards
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2020 com.dozingcatsoftware. All rights reserved.

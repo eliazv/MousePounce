@@ -15,10 +15,11 @@ import 'types.dart';
 import 'ui_widgets.dart';
 import 'animation_helpers.dart';
 import 'haptic_feedback_manager.dart';
+import 'background_widgets.dart';
 
 const appTitle = "Egyptian Mouse Pounce";
 const appVersion = "1.4.0";
-const appLegalese = "© 2020-2025 Brian Nenninger";
+const appLegalese = "© 2025";
 
 void main() {
   runApp(MyApp());
@@ -118,6 +119,8 @@ class _MyHomePageState extends State<MyHomePage> {
   void _readPreferencesAndStartGame() async {
     this.preferences = await SharedPreferences.getInstance();
     soundPlayer.enabled = preferences.getBool(soundEnabledPrefsKey) ?? true;
+    soundPlayer.musicEnabled = preferences.getBool(musicEnabledPrefsKey) ?? false;
+    soundPlayer.startBackgroundMusic();
 
     for (var v in RuleVariation.values) {
       bool enabled = this.preferences.getBool(prefsKeyForVariation(v)) ?? false;
@@ -791,6 +794,7 @@ class _MyHomePageState extends State<MyHomePage> {
         aiSlapSpeed: aiSlapSpeed,
         onAiSlapSpeedChanged: (speed) => setState(() => aiSlapSpeed = speed),
         onSoundEnabledChanged: setSoundEnabled,
+        onMusicEnabledChanged: setMusicEnabled,
         soundPlayer: soundPlayer,
       );
       if (mounted) setState(() => menuOpen = false);
@@ -845,6 +849,13 @@ class _MyHomePageState extends State<MyHomePage> {
     } else {
       soundPlayer.playHappySound();
     }
+  }
+
+  void setMusicEnabled(bool enabled) {
+    setState(() {
+      soundPlayer.setMusicEnabled(enabled);
+    });
+    preferences.setBool(musicEnabledPrefsKey, enabled);
   }
 
   Widget _preferencesDialog(final Size displaySize) {
@@ -1093,77 +1104,93 @@ class _MyHomePageState extends State<MyHomePage> {
     final playerHeight = 120.0; // displaySize.height / 9;
 
     const cardAreaBackgroundColor = Color.fromARGB(255, 0, 128, 0);
-    const backgroundColor = Color.fromARGB(255, 187, 216, 182);
 
     return Scaffold(
-        backgroundColor: backgroundColor,
-        body: Padding(
-          padding: displayPadding,
-          child: Center(
-            child: Stack(
-              children: [
-                // Use a stack with the card pile last so that the cards will draw
-                // over the player areas when they're animating in.
-                Stack(
-                  children: [
-                    if (runningTimingTestAnimation) timingTestAnimation(),
-                    Positioned(
-                      left: 0,
-                      width: displaySize.width,
-                      top: 0,
-                      height: playerHeight,
-                      child: Container(
-                          height: playerHeight,
-                          width: double.infinity,
-                          child: aiMode == AIMode.human_vs_human
-                              ? _playerStatusWidget(game, 1, displaySize)
-                              : _aiPlayerWidget(game, 1, displaySize)),
-                    ),
-                    Positioned(
-                      left: 0,
-                      width: displaySize.width,
-                      top: displaySize.height - playerHeight,
-                      height: playerHeight,
-                      child: Container(
-                          height: playerHeight,
-                          width: double.infinity,
-                          child: aiMode == AIMode.ai_vs_ai
-                              ? _aiPlayerWidget(game, 0, displaySize)
-                              : _playerStatusWidget(game, 0, displaySize)),
-                    ),
-                    Positioned(
-                      left: 0,
-                      width: displaySize.width,
-                      top: playerHeight,
-                      height: displaySize.height - 2 * playerHeight,
-                      child: Container(
-                        color: cardAreaBackgroundColor,
-                        child: Stack(children: [
-                          Container(
-                            child: _pileContent(game, displaySize),
-                          ),
-                          _noSlapWidget(0, displaySize),
-                          _noSlapWidget(1, displaySize),
-                        ]),
+        body: AnimatedBackgroundWidget(
+          child: Padding(
+            padding: displayPadding,
+            child: Center(
+              child: Stack(
+                children: [
+                  // Use a stack with the card pile last so that the cards will draw
+                  // over the player areas when they're animating in.
+                  Stack(
+                    children: [
+                      if (runningTimingTestAnimation) timingTestAnimation(),
+                      // Top player area with sparkle background
+                      Positioned(
+                        left: 0,
+                        width: displaySize.width,
+                        top: 0,
+                        height: playerHeight,
+                        child: Stack(
+                          children: [
+                            SparkleBackground(playerIndex: 1),
+                            Container(
+                                height: playerHeight,
+                                width: double.infinity,
+                                child: aiMode == AIMode.human_vs_human
+                                    ? _playerStatusWidget(game, 1, displaySize)
+                                    : _aiPlayerWidget(game, 1, displaySize)),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                      // Bottom player area with sparkle background
+                      Positioned(
+                        left: 0,
+                        width: displaySize.width,
+                        top: displaySize.height - playerHeight,
+                        height: playerHeight,
+                        child: Stack(
+                          children: [
+                            SparkleBackground(playerIndex: 0),
+                            Container(
+                                height: playerHeight,
+                                width: double.infinity,
+                                child: aiMode == AIMode.ai_vs_ai
+                                    ? _aiPlayerWidget(game, 0, displaySize)
+                                    : _playerStatusWidget(game, 0, displaySize)),
+                          ],
+                        ),
+                      ),
+                      // Card area with decorative felt border
+                      Positioned(
+                        left: 0,
+                        width: displaySize.width,
+                        top: playerHeight,
+                        height: displaySize.height - 2 * playerHeight,
+                        child: FeltTableBorder(
+                          child: Container(
+                            color: cardAreaBackgroundColor,
+                            child: Stack(children: [
+                              Container(
+                                child: _pileContent(game, displaySize),
+                              ),
+                              _noSlapWidget(0, displaySize),
+                              _noSlapWidget(1, displaySize),
+                            ]),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
 
-                if (dialogMode == DialogMode.game_over)
-                  _gameOverDialog(displaySize),
-                if (dialogMode == DialogMode.preferences)
-                  _preferencesDialog(displaySize),
-                if (dialogMode == DialogMode.animation_speed_warning)
-                  animationSpeedWarningDialog(displaySize),
-                if (dialogMode == DialogMode.none &&
-                    !menuOpen &&
-                    (menuButtonVisible || _isGameActive()))
-                  _menuIcon(displaySize),
-                // Text(this.animationMode.toString()),
-              ],
+                  if (dialogMode == DialogMode.game_over)
+                    _gameOverDialog(displaySize),
+                  if (dialogMode == DialogMode.preferences)
+                    _preferencesDialog(displaySize),
+                  if (dialogMode == DialogMode.animation_speed_warning)
+                    animationSpeedWarningDialog(displaySize),
+                  if (dialogMode == DialogMode.none &&
+                      !menuOpen &&
+                      (menuButtonVisible || _isGameActive()))
+                    _menuIcon(displaySize),
+                  // Text(this.animationMode.toString()),
+                ],
+              ),
             ),
           ),
-        ));
+        ),
+    );
   }
 }

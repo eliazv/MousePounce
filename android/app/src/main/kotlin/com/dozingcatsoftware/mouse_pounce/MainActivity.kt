@@ -1,4 +1,4 @@
-package com.dozingcatsoftware.mouse_pounce
+package com.eliazavatta.slapcards
 
 import io.flutter.embedding.android.FlutterActivity
 
