@@ -1,11 +1,11 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'soundeffects.dart';
 import 'game.dart';
 import 'types.dart';
+import 'preferences_sheet.dart';
+import 'rules_sheet.dart';
 
 /// A modern glass-effect bottom sheet for the main menu with integrated preferences.
 /// Call `showMainMenuBottomSheet` to present it. Buttons call the provided callbacks
@@ -54,8 +54,6 @@ Future<void> showMainMenuBottomSheet(
   );
 }
 
-enum _MenuView { main, preferences, rules }
-
 class _MainMenuBottomSheetContent extends StatefulWidget {
   final Size displaySize;
   final VoidCallback onOnePlayer;
@@ -96,53 +94,26 @@ class _MainMenuBottomSheetContent extends StatefulWidget {
 
 class _MainMenuBottomSheetContentState
     extends State<_MainMenuBottomSheetContent> {
-  _MenuView _currentView = _MenuView.main;
-
-  void _navigateToPreferences() {
-    setState(() => _currentView = _MenuView.preferences);
+  void _openPreferences() async {
+    await showPreferencesBottomSheet(
+      context,
+      widget.displaySize,
+      preferences: widget.preferences,
+      game: widget.game,
+      aiSlapSpeed: widget.aiSlapSpeed,
+      onAiSlapSpeedChanged: widget.onAiSlapSpeedChanged,
+      onSoundEnabledChanged: widget.onSoundEnabledChanged,
+      onMusicEnabledChanged: widget.onMusicEnabledChanged,
+      soundPlayer: widget.soundPlayer,
+      onClose: () {},
+    );
   }
 
-  void _navigateToRules() {
-    setState(() => _currentView = _MenuView.rules);
-  }
-
-  void _navigateToMain() {
-    setState(() => _currentView = _MenuView.main);
-  }
-
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: EdgeInsets.only(left: 4, right: 16, top: 4, bottom: 8),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: Color(0xFF1976D2).withOpacity(0.15),
-              shape: BoxShape.circle,
-              border: Border.all(color: Color(0xFF1976D2), width: 2),
-            ),
-            child: IconButton(
-              icon: Icon(Icons.arrow_back_rounded,
-                  color: Color(0xFF1976D2), size: 20),
-              onPressed: _navigateToMain,
-              visualDensity: VisualDensity.compact,
-              padding: EdgeInsets.zero,
-            ),
-          ),
-          SizedBox(width: 12),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1976D2),
-              letterSpacing: 0.5,
-            ),
-          ),
-        ],
-      ),
+  void _openRules() async {
+    await showRulesBottomSheet(
+      context,
+      widget.displaySize,
+      onClose: () {},
     );
   }
 
@@ -168,11 +139,7 @@ class _MainMenuBottomSheetContentState
                   border:
                       Border.all(color: Colors.white.withValues(alpha: 0.08)),
                 ),
-                child: _currentView == _MenuView.main
-                    ? _buildMainMenu(context)
-                    : _currentView == _MenuView.preferences
-                        ? _buildPreferencesMenu(context)
-                        : _buildRulesMenu(context),
+                child: _buildMainMenu(context),
               ),
             ),
           ),
@@ -308,312 +275,23 @@ class _MainMenuBottomSheetContentState
             Color(0xFF1976D2), Colors.white),
         bigButton('2 Local Players', Icons.people, widget.onTwoPlayer,
             Color.fromARGB(255, 220, 150, 10), Colors.white),
-        SizedBox(height: 16),
+        SizedBox(height: 10),
 
         // Secondary actions
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Expanded(
-              child: smallButton(
-                  'Preferences', Icons.settings, _navigateToPreferences),
+              child:
+                  smallButton('Preferences', Icons.settings, _openPreferences),
             ),
             SizedBox(width: 8),
             Expanded(
-              child: smallButton('Rules', Icons.menu_book, _navigateToRules),
+              child: smallButton('Rules', Icons.menu_book, _openRules),
             ),
           ],
         ),
         SizedBox(height: 8),
-      ],
-    );
-  }
-
-  Widget _buildPreferencesMenu(BuildContext context) {
-    Widget sectionTitle(String title) => Padding(
-          padding: EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 4),
-          child: Text(
-            title,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Colors.black54,
-              letterSpacing: 0.5,
-            ),
-          ),
-        );
-
-    Widget makeRuleCheckboxRow(String title, RuleVariation v) {
-      return CheckboxListTile(
-        dense: true,
-        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-        visualDensity: VisualDensity.compact,
-        title:
-            Text(title, style: TextStyle(fontSize: 13, color: Colors.black87)),
-        onChanged: (bool? checked) {
-          setState(() {
-            widget.game.rules.setVariationEnabled(v, checked == true);
-            widget.preferences
-                .setBool(prefsKeyForVariation(v), checked == true);
-          });
-        },
-        value: widget.game.rules.isVariationEnabled(v),
-        activeColor: Color(0xFF1976D2),
-        checkColor: Colors.white,
-      );
-    }
-
-    Widget makeAiSpeedRow() {
-      return Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('Cat slap speed',
-                style: TextStyle(fontSize: 13, color: Colors.black87)),
-            DropdownButton<AISlapSpeed>(
-              value: widget.aiSlapSpeed,
-              dropdownColor: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              underline: SizedBox(),
-              onChanged: (AISlapSpeed? value) {
-                if (value != null) {
-                  setState(() {
-                    widget.onAiSlapSpeedChanged(value);
-                    widget.preferences
-                        .setString(aiSlapSpeedPrefsKey, value.toString());
-                  });
-                }
-              },
-              items: [
-                DropdownMenuItem(
-                    value: AISlapSpeed.slow,
-                    child: Text('Slow',
-                        style: TextStyle(fontSize: 12, color: Colors.black87))),
-                DropdownMenuItem(
-                    value: AISlapSpeed.medium,
-                    child: Text('Medium',
-                        style: TextStyle(fontSize: 12, color: Colors.black87))),
-                DropdownMenuItem(
-                    value: AISlapSpeed.fast,
-                    child: Text('Fast',
-                        style: TextStyle(fontSize: 12, color: Colors.black87))),
-              ],
-            ),
-          ],
-        ),
-      );
-    }
-
-    Widget makeSlapPenaltyRow() {
-      return Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Wrong slap penalty',
-                style: TextStyle(fontSize: 13, color: Colors.black87)),
-            SizedBox(height: 8),
-            DropdownButton<BadSlapPenaltyType>(
-              value: widget.game.rules.badSlapPenalty,
-              dropdownColor: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              isExpanded: true,
-              underline: SizedBox(),
-              onChanged: (BadSlapPenaltyType? p) {
-                if (p != null) {
-                  setState(() {
-                    widget.game.rules.badSlapPenalty = p;
-                    widget.preferences
-                        .setString(badSlapPenaltyPrefsKey, p.toString());
-                  });
-                }
-              },
-              items: [
-                DropdownMenuItem(
-                    value: BadSlapPenaltyType.none,
-                    child: Text('None',
-                        style: TextStyle(fontSize: 12, color: Colors.black87))),
-                DropdownMenuItem(
-                    value: BadSlapPenaltyType.penalty_card,
-                    child: Text('Penalty card',
-                        style: TextStyle(fontSize: 12, color: Colors.black87))),
-                DropdownMenuItem(
-                    value: BadSlapPenaltyType.slap_timeout,
-                    child: Text("Can't slap for next 5 cards",
-                        style: TextStyle(fontSize: 11, color: Colors.black87))),
-                DropdownMenuItem(
-                    value: BadSlapPenaltyType.opponent_wins_pile,
-                    child: Text('Opponent wins pile',
-                        style: TextStyle(fontSize: 12, color: Colors.black87))),
-              ],
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _buildSectionHeader('Preferences'),
-
-        // Scrollable content with white background
-        Flexible(
-          child: Container(
-            margin: EdgeInsets.symmetric(horizontal: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Scrollbar(
-              thumbVisibility: true,
-              radius: Radius.circular(8),
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // General settings
-                      sectionTitle('AUDIO'),
-                      CheckboxListTile(
-                        dense: true,
-                        contentPadding:
-                            EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-                        visualDensity: VisualDensity.compact,
-                        title: Text("Enable sound effects",
-                            style:
-                                TextStyle(fontSize: 13, color: Colors.black87)),
-                        value: widget.soundPlayer.enabled,
-                        activeColor: Color(0xFF1976D2),
-                        checkColor: Colors.white,
-                        onChanged: (bool? checked) {
-                          setState(() {
-                            widget.onSoundEnabledChanged(checked == true);
-                          });
-                        },
-                      ),
-                      CheckboxListTile(
-                        dense: true,
-                        contentPadding:
-                            EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-                        visualDensity: VisualDensity.compact,
-                        title: Text("Enable background music",
-                            style:
-                                TextStyle(fontSize: 13, color: Colors.black87)),
-                        value: widget.soundPlayer.musicEnabled,
-                        activeColor: Color(0xFF1976D2),
-                        checkColor: Colors.white,
-                        onChanged: (bool? checked) {
-                          setState(() {
-                            widget.onMusicEnabledChanged(checked == true);
-                          });
-                        },
-                      ),
-                      SizedBox(height: 8),
-
-                      sectionTitle('AI DIFFICULTY'),
-                      makeAiSpeedRow(),
-
-                      Divider(color: Colors.black12, height: 24),
-
-                      // Game rules
-                      sectionTitle('GAME RULES'),
-                      makeRuleCheckboxRow(
-                          'Tens are stoppers', RuleVariation.ten_is_stopper),
-
-                      sectionTitle('SLAP CONDITIONS'),
-                      makeRuleCheckboxRow(
-                          'Sandwiches', RuleVariation.slap_on_sandwich),
-                      makeRuleCheckboxRow(
-                          'Run of 3', RuleVariation.slap_on_run_of_3),
-                      makeRuleCheckboxRow('4 of same suit',
-                          RuleVariation.slap_on_same_suit_of_4),
-                      makeRuleCheckboxRow(
-                          'Adds to 10', RuleVariation.slap_on_add_to_10),
-                      makeRuleCheckboxRow(
-                          'Marriages', RuleVariation.slap_on_marriage),
-                      makeRuleCheckboxRow(
-                          'Divorces', RuleVariation.slap_on_divorce),
-
-                      Divider(color: Colors.black12, height: 24),
-
-                      sectionTitle('PENALTIES'),
-                      makeSlapPenaltyRow(),
-                      SizedBox(height: 16),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRulesMenu(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _buildSectionHeader('Game Rules'),
-
-        // Scrollable content with white background
-        Flexible(
-          child: Container(
-            margin: EdgeInsets.symmetric(horizontal: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Scrollbar(
-              thumbVisibility: true,
-              radius: Radius.circular(8),
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: EdgeInsets.all(16),
-                  child: FutureBuilder<String>(
-                    future: DefaultAssetBundle.of(context)
-                        .loadString('assets/doc/about.md'),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasData) {
-                        // Remove email contact line
-                        String content = snapshot.data!;
-                        content = content.replaceFirst(
-                            RegExp(r'^Comments or bug reports:.*\n\n?',
-                                multiLine: true),
-                            '');
-
-                        return MarkdownBody(
-                          data: content,
-                          styleSheet: MarkdownStyleSheet(
-                            h2: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1976D2),
-                            ),
-                            p: TextStyle(fontSize: 13, color: Colors.black87),
-                            listBullet:
-                                TextStyle(fontSize: 13, color: Colors.black87),
-                          ),
-                          onTapLink: (text, href, title) => launch(href ?? ''),
-                          listItemCrossAxisAlignment:
-                              MarkdownListItemCrossAxisAlignment.start,
-                        );
-                      } else if (snapshot.hasError) {
-                        return Text('Error loading rules',
-                            style: TextStyle(color: Colors.red));
-                      } else {
-                        return Center(child: CircularProgressIndicator());
-                      }
-                    },
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
       ],
     );
   }

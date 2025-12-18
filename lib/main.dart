@@ -127,7 +127,7 @@ class _MyHomePageState extends State<MyHomePage> {
     this.preferences = await SharedPreferences.getInstance();
     soundPlayer.enabled = preferences.getBool(soundEnabledPrefsKey) ?? true;
     soundPlayer.musicEnabled =
-        preferences.getBool(musicEnabledPrefsKey) ?? false;
+        preferences.getBool(musicEnabledPrefsKey) ?? true;
     soundPlayer.startBackgroundMusic();
 
     for (var v in RuleVariation.values) {
@@ -670,6 +670,8 @@ class _MyHomePageState extends State<MyHomePage> {
       dialogMode = DialogMode.none;
       menuButtonVisible = false;
       animationMode = AnimationMode.none;
+      catImageNumbers = _randomCatImageNumbers();
+      playerBackgrounds = _randomPlayerBackgrounds(catImageNumbers.length);
       aiSlapCounter++;
       game.startGame();
     });
