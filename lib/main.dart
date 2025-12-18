@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:math';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -9,6 +10,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'game.dart';
 import 'main_menu_sheet.dart';
+import 'paused_menu_sheet.dart';
+import 'types.dart';
 
 const appTitle = "Egyptian Mouse Pounce";
 const appVersion = "1.4.0";
@@ -77,16 +80,6 @@ final aiMoodImages = {
   AIMood.very_happy: 'bubble_grin.png',
   AIMood.angry: 'bubble_mad.png',
 };
-
-enum AISlapSpeed { slow, medium, fast }
-
-String prefsKeyForVariation(RuleVariation v) {
-  return 'rule.${v.toString()}';
-}
-
-final soundEnabledPrefsKey = 'sound_enabled';
-final aiSlapSpeedPrefsKey = 'ai_slap_speed';
-final badSlapPenaltyPrefsKey = 'bad_slap_penalty';
 
 final dialogBackgroundColor = Color.fromARGB(0xd0, 0xd8, 0xd8, 0xd8);
 const dialogTableBackgroundColor = Color.fromARGB(0x80, 0xc0, 0xc0, 0xc0);
@@ -230,8 +223,6 @@ class _MyHomePageState extends State<MyHomePage> {
         return (baseDelay * 0.6).toInt();
       case AISlapSpeed.slow:
         return baseDelay * 2;
-      default:
-        throw AssertionError('Unknown AISlapSpeed');
     }
   }
 
@@ -782,32 +773,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   // Main menu moved to a separate bottom-sheet widget in lib/main_menu_sheet.dart
 
-  Widget _pausedMenuDialog(final Size displaySize) {
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      child: Center(
-        child: Dialog(
-          backgroundColor: dialogBackgroundColor,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _paddingAll(
-                  10,
-                  Table(
-                    defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-                    defaultColumnWidth: const IntrinsicColumnWidth(),
-                    children: [
-                      _makeButtonRow("Continue", _continueGame),
-                      _makeButtonRow("End Game", _endGame),
-                    ],
-                  )),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  // Paused menu moved to lib/paused_menu_sheet.dart
 
   Widget _gameOverDialog(final Size displaySize) {
     final winner = game.gameWinner();
@@ -907,13 +873,6 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  void _showPreferences() {
-    setState(() {
-      dialogMode = DialogMode.preferences;
-      menuButtonVisible = false;
-    });
-  }
-
   void _closePreferences() {
     setState(() {
       dialogMode = DialogMode.none;
@@ -948,10 +907,43 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Widget _menuIcon(final Size displaySize) {
     return Padding(
-      padding: EdgeInsets.all(10),
-      child: FloatingActionButton(
-        onPressed: () => _showMenu(context, displaySize),
-        child: Icon(aiMode == AIMode.ai_vs_ai ? Icons.menu : Icons.pause),
+      padding: EdgeInsets.all(12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.3),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 8,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () => _showMenu(context, displaySize),
+                child: Icon(
+                  aiMode == AIMode.ai_vs_ai ? Icons.menu_rounded : Icons.pause_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -968,12 +960,23 @@ class _MyHomePageState extends State<MyHomePage> {
         onPreferences: () =>
             setState(() => dialogMode = DialogMode.preferences),
         onAbout: (ctx) => _showAboutDialog(ctx),
+        preferences: preferences,
+        game: game,
+        aiSlapSpeed: aiSlapSpeed,
+        onAiSlapSpeedChanged: (speed) => setState(() => aiSlapSpeed = speed),
+        onSoundEnabledChanged: setSoundEnabled,
+        soundPlayer: soundPlayer,
       );
       if (mounted) setState(() => menuOpen = false);
     } else {
-      setState(() {
-        dialogMode = DialogMode.game_paused;
-      });
+      setState(() => menuOpen = true);
+      await showPausedMenuBottomSheet(
+        context,
+        displaySize,
+        onContinue: _continueGame,
+        onEnd: _endGame,
+      );
+      if (mounted) setState(() => menuOpen = false);
     }
   }
 
@@ -1320,8 +1323,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                   ],
                 ),
-                if (dialogMode == DialogMode.game_paused)
-                  _pausedMenuDialog(displaySize),
+
                 if (dialogMode == DialogMode.game_over)
                   _gameOverDialog(displaySize),
                 if (dialogMode == DialogMode.preferences)
