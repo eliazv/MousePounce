@@ -1,0 +1,10 @@
+- elimina bottone watch the cat
+- migliora i menu
+  - rendili bottom sheet stile glass quindi traslucide che si vede un po di sfondo
+- banner ads
+- migliroa grafica gioco tappetino e gatti
+- da com.dozingcatsoftware.mouse_pounce a com.eliazavatta.slapcards
+- titolo del gioco deve essere "Slap Cards: Egyptian Rat Screw"
+- bottone che apre regole rules.md
+- altri nomi: Egyptian Rat Screw / ERS, Slapjack, Beggar-my-neighbour, Egyptian War varianti.md
+- analiza preferenze e capisci come migliroare

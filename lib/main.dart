@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'game.dart';
+import 'main_menu_sheet.dart';
 
 const appTitle = "Egyptian Mouse Pounce";
 const appVersion = "1.4.0";
@@ -57,7 +58,7 @@ const illegalSlapAnimationDuration = Duration(milliseconds: 600);
 const moodDuration = Duration(milliseconds: 5000);
 const moodFadeMillis = 500;
 
-enum AIMode {human_vs_human, human_vs_ai, ai_vs_ai}
+enum AIMode { human_vs_human, human_vs_ai, ai_vs_ai }
 
 enum DialogMode {
   none,
@@ -69,7 +70,7 @@ enum DialogMode {
   animation_speed_warning,
 }
 
-enum AIMood {none, happy, very_happy, angry}
+enum AIMood { none, happy, very_happy, angry }
 
 final aiMoodImages = {
   AIMood.happy: 'bubble_happy.png',
@@ -77,7 +78,7 @@ final aiMoodImages = {
   AIMood.angry: 'bubble_mad.png',
 };
 
-enum AISlapSpeed {slow, medium, fast}
+enum AISlapSpeed { slow, medium, fast }
 
 String prefsKeyForVariation(RuleVariation v) {
   return 'rule.${v.toString()}';
@@ -96,29 +97,48 @@ class _MyHomePageState extends State<MyHomePage> {
   Game game = Game();
   AnimationMode animationMode = AnimationMode.none;
   AIMode aiMode = AIMode.ai_vs_ai;
-  DialogMode dialogMode = DialogMode.main_menu;
+  DialogMode dialogMode = DialogMode.none;
   int? pileMovingToPlayer;
   int? badSlapPileWinner;
   PileCard? penaltyCard;
   bool penaltyCardPlayed = false;
   int? aiSlapPlayerIndex;
-  int aiSlapCounter = 0;  // Used to check if a previously scheduled AI slap is still valid.
+  int aiSlapCounter =
+      0; // Used to check if a previously scheduled AI slap is still valid.
   late List<int> catImageNumbers;
   List<AIMood> aiMoods = [AIMood.none, AIMood.none];
   AISlapSpeed aiSlapSpeed = AISlapSpeed.medium;
   final numCatImages = 4;
   SoundEffectPlayer soundPlayer = SoundEffectPlayer();
+  bool menuButtonVisible =
+      false; // show FAB only when sheet closed via 'Watch the cats'
+  bool menuOpen = false;
 
-  @override void initState() {
+  @override
+  void initState() {
     super.initState();
     game = Game(rng: rng);
     catImageNumbers = _randomCatImageNumbers();
     penaltyCard = null;
     soundPlayer.init();
     _readPreferencesAndStartGame();
+    // Show the main menu as a bottom sheet on first frame if in AI-vs-AI mode.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (aiMode == AIMode.ai_vs_ai) {
+        final fullDisplaySize = MediaQuery.sizeOf(context);
+        final displayPadding = MediaQuery.paddingOf(context);
+        final displaySize = Size(
+            fullDisplaySize.width - displayPadding.left - displayPadding.right,
+            fullDisplaySize.height -
+                displayPadding.top -
+                displayPadding.bottom);
+        _showMenu(context, displaySize);
+      }
+    });
   }
 
-  @override void didChangeDependencies() {
+  @override
+  void didChangeDependencies() {
     super.didChangeDependencies();
     _preloadCardImages();
   }
@@ -133,12 +153,13 @@ class _MyHomePageState extends State<MyHomePage> {
     }
 
     final speedStr = this.preferences.getString(aiSlapSpeedPrefsKey) ?? '';
-    aiSlapSpeed = AISlapSpeed.values.firstWhere(
-        (s) => s.toString() == speedStr, orElse: () => AISlapSpeed.medium);
+    aiSlapSpeed = AISlapSpeed.values.firstWhere((s) => s.toString() == speedStr,
+        orElse: () => AISlapSpeed.medium);
 
     final penaltyStr = this.preferences.getString(badSlapPenaltyPrefsKey) ?? '';
     game.rules.badSlapPenalty = BadSlapPenaltyType.values.firstWhere(
-        (s) => s.toString() == penaltyStr, orElse: () => BadSlapPenaltyType.none);
+        (s) => s.toString() == penaltyStr,
+        orElse: () => BadSlapPenaltyType.none);
 
     _scheduleAiPlayIfNeeded();
 
@@ -158,7 +179,8 @@ class _MyHomePageState extends State<MyHomePage> {
   void _preloadCardImages() {
     for (Rank r in Rank.values) {
       for (Suit s in Suit.values) {
-        precacheImage(AssetImage(_imagePathForCard(PlayingCard(r, s))), context);
+        precacheImage(
+            AssetImage(_imagePathForCard(PlayingCard(r, s))), context);
       }
     }
   }
@@ -190,7 +212,9 @@ class _MyHomePageState extends State<MyHomePage> {
     final thisGame = game;
     if (_shouldAiPlayCard()) {
       Future.delayed(const Duration(milliseconds: 500), () {
-        if (thisGame == game && _shouldAiPlayCard() && badSlapPileWinner == null) {
+        if (thisGame == game &&
+            _shouldAiPlayCard() &&
+            badSlapPileWinner == null) {
           _playCard();
         }
       });
@@ -230,8 +254,7 @@ class _MyHomePageState extends State<MyHomePage> {
           });
         }
       });
-    }
-    else {
+    } else {
       final pileWinner = game.challengeChanceWinner;
       if (pileWinner != null) {
         animationMode = AnimationMode.waiting_to_move_pile;
@@ -243,8 +266,7 @@ class _MyHomePageState extends State<MyHomePage> {
             }
           });
         });
-      }
-      else {
+      } else {
         _scheduleAiPlayIfNeeded();
       }
     }
@@ -262,7 +284,9 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _aiHasMoodForPile(final List<PileCard> pileCards) {
     int total = 0;
     for (PileCard pc in pileCards) {
-      int cval = moodWeights.containsKey(pc.card.rank) ? moodWeights[pc.card.rank]! : 1;
+      int cval = moodWeights.containsKey(pc.card.rank)
+          ? moodWeights[pc.card.rank]!
+          : 1;
       total += cval;
     }
     return total > 16;
@@ -272,9 +296,12 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() => aiMoods = moods);
   }
 
-  void _updateAiMoodsForPile(final List<PileCard> pileCards, final int pileWinner) {
+  void _updateAiMoodsForPile(
+      final List<PileCard> pileCards, final int pileWinner) {
     if (_aiHasMoodForPile(pileCards)) {
-      var moods = pileWinner == 0 ? [AIMood.happy, AIMood.angry] : [AIMood.angry, AIMood.happy];
+      var moods = pileWinner == 0
+          ? [AIMood.happy, AIMood.angry]
+          : [AIMood.angry, AIMood.happy];
       _setAiMoods(moods);
 
       _playSoundForMoods(moods);
@@ -282,7 +309,9 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _updateAiMoodsForGameWinner(int winner) {
-    var moods = winner == 0 ? [AIMood.very_happy, AIMood.angry] : [AIMood.angry, AIMood.very_happy];
+    var moods = winner == 0
+        ? [AIMood.very_happy, AIMood.angry]
+        : [AIMood.angry, AIMood.very_happy];
     _setAiMoods(moods);
     _playSoundForMoods(moods);
   }
@@ -317,12 +346,10 @@ class _MyHomePageState extends State<MyHomePage> {
             _scheduleAiPlayIfNeeded();
           });
         });
-      }
-      else {
+      } else {
         dialogMode = DialogMode.game_over;
       }
-    }
-    else {
+    } else {
       _updateAiMoodsForPile(cardsWon, pileMovingToPlayer!);
     }
 
@@ -341,7 +368,8 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _doSlap(Offset globalOffset, double globalHeight) {
-    if (animationMode != AnimationMode.none && animationMode != AnimationMode.waiting_to_move_pile) {
+    if (animationMode != AnimationMode.none &&
+        animationMode != AnimationMode.waiting_to_move_pile) {
       return;
     }
     int pnum = 0;
@@ -357,8 +385,7 @@ class _MyHomePageState extends State<MyHomePage> {
         pileMovingToPlayer = pnum;
         animationMode = AnimationMode.pile_to_winner;
       });
-    }
-    else {
+    } else {
       _handleIllegalSlap(pnum);
     }
   }
@@ -393,14 +420,12 @@ class _MyHomePageState extends State<MyHomePage> {
           this.pileMovingToPlayer = badSlapPileWinner;
           this.badSlapPileWinner = null;
           this.animationMode = AnimationMode.pile_to_winner;
-        }
-        else {
+        } else {
           final cw = this.game.challengeChanceWinner;
           if (cw != null) {
             this.pileMovingToPlayer = cw;
             this.animationMode = AnimationMode.pile_to_winner;
-          }
-          else {
+          } else {
             this.animationMode = AnimationMode.none;
           }
         }
@@ -409,70 +434,83 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  Widget _playerStatusWidget(final Game game, final int playerIndex, final Size displaySize) {
+  Widget _playerStatusWidget(
+      final Game game, final int playerIndex, final Size displaySize) {
     final enabled = game.canPlayCard(playerIndex);
     return Transform.rotate(
-      angle: (playerIndex == 1) ? pi : 0,
+        angle: (playerIndex == 1) ? pi : 0,
         child: Padding(
-          padding: EdgeInsets.all(0.025 * displaySize.height),
-          child: ElevatedButton(
-            onPressed: enabled ? (() => _playCardIfPlayerTurn(playerIndex)) : null,
-            child: Padding(padding: EdgeInsets.all(10), child: Text (
-              'Play card: ${game.playerCards[playerIndex].length} left',
-              style: TextStyle(
-                fontSize: Theme.of(context).textTheme.headlineMedium!.fontSize,
-                color: enabled ? Colors.green : Colors.grey,
-              )
-          )),
-        )));
+            padding: EdgeInsets.all(0.025 * displaySize.height),
+            child: ElevatedButton(
+              onPressed:
+                  enabled ? (() => _playCardIfPlayerTurn(playerIndex)) : null,
+              child: Padding(
+                  padding: EdgeInsets.all(10),
+                  child: Text(
+                      'Play card: ${game.playerCards[playerIndex].length} left',
+                      style: TextStyle(
+                        fontSize: Theme.of(context)
+                            .textTheme
+                            .headlineMedium!
+                            .fontSize,
+                        color: enabled ? Colors.green : Colors.grey,
+                      ))),
+            )));
   }
 
-  Widget _aiPlayerWidget(final Game game, final int playerIndex, final Size displaySize) {
+  Widget _aiPlayerWidget(
+      final Game game, final int playerIndex, final Size displaySize) {
     final moodImage = aiMoodImages[aiMoods[playerIndex]];
     return Transform.rotate(
       angle: playerIndex == 1 ? 0 : pi,
       child: Stack(
         children: [
-          Positioned.fill(child:
-            Transform.translate(
-              offset: Offset(0, 10),
-              child: Image(
-                image: AssetImage('assets/cats/cat${catImageNumbers[playerIndex]}.png'),
-                fit: BoxFit.fitHeight,
-                alignment: Alignment.center,
-              )
-            )
-          ),
+          Positioned.fill(
+              child: Transform.translate(
+                  offset: Offset(0, 10),
+                  child: Image(
+                    image: AssetImage(
+                        'assets/cats/cat${catImageNumbers[playerIndex]}.png'),
+                    fit: BoxFit.fitHeight,
+                    alignment: Alignment.center,
+                  ))),
 
           // Fade mood bubbles in and out.
-          if (moodImage != null) Positioned.fill(top: 5, bottom: 40, child:
-            Transform.translate(
-                offset: Offset(110, 0),
-                child: TweenAnimationBuilder(
-                  tween: Tween(begin: 0.0, end: moodDuration.inMilliseconds.toDouble()),
-                  duration: moodDuration,
-                  onEnd: () => setState(() => aiMoods = [AIMood.none, AIMood.none]),
-                  child: Image(
-                    image: AssetImage('assets/cats/$moodImage'),
+          if (moodImage != null)
+            Positioned.fill(
+              top: 5,
+              bottom: 40,
+              child: Transform.translate(
+                  offset: Offset(110, 0),
+                  child: TweenAnimationBuilder(
+                    tween: Tween(
+                        begin: 0.0,
+                        end: moodDuration.inMilliseconds.toDouble()),
+                    duration: moodDuration,
+                    onEnd: () =>
+                        setState(() => aiMoods = [AIMood.none, AIMood.none]),
+                    child: Image(
+                      image: AssetImage('assets/cats/$moodImage'),
                       fit: BoxFit.fitHeight,
                       alignment: Alignment.center,
-                  ),
-                  builder: (BuildContext context, double animMillis, Widget? child) {
-                    double op = 1.0;
-                    if (animMillis < moodFadeMillis) {
-                      op = animMillis / moodFadeMillis;
-                    }
-                    else if (animMillis > moodDuration.inMilliseconds - moodFadeMillis) {
-                      op = (moodDuration.inMilliseconds - animMillis) / moodFadeMillis;
-                    }
-                    return Opacity(
-                      opacity: op,
-                      child: child,
-                    );
-                  },
-                )
+                    ),
+                    builder: (BuildContext context, double animMillis,
+                        Widget? child) {
+                      double op = 1.0;
+                      if (animMillis < moodFadeMillis) {
+                        op = animMillis / moodFadeMillis;
+                      } else if (animMillis >
+                          moodDuration.inMilliseconds - moodFadeMillis) {
+                        op = (moodDuration.inMilliseconds - animMillis) /
+                            moodFadeMillis;
+                      }
+                      return Opacity(
+                        opacity: op,
+                        child: child,
+                      );
+                    },
+                  )),
             ),
-          ),
         ],
       ),
     );
@@ -490,11 +528,11 @@ class _MyHomePageState extends State<MyHomePage> {
           double cardWidth = height * cardAspectRatio;
           return Rect.fromLTWH(width / 2 - cardWidth / 2, 0, cardWidth, height);
           // return Rect.fromLTWH(0, 0, width, height);
-        }
-        else {
+        } else {
           // Full width, centered height.
           double cardHeight = width / cardAspectRatio;
-          return Rect.fromLTWH(0, height / 2 - cardHeight / 2, width, cardHeight);
+          return Rect.fromLTWH(
+              0, height / 2 - cardHeight / 2, width, cardHeight);
         }
       })();
 
@@ -510,7 +548,8 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
         Positioned.fromRect(
           rect: cardRect,
-          child: Container(decoration: BoxDecoration(
+          child: Container(
+              decoration: BoxDecoration(
             border: Border.all(
               color: const Color.fromRGBO(64, 64, 64, 1),
               width: 1,
@@ -522,8 +561,8 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  Widget _pileCardWidget(
-      final PileCard pc, final Size displaySize, {final rotationFrac = 1.0}) {
+  Widget _pileCardWidget(final PileCard pc, final Size displaySize,
+      {final rotationFrac = 1.0}) {
     final minDim = min(displaySize.width, displaySize.height);
     final maxOffset = minDim * 0.1;
     return Container(
@@ -531,33 +570,32 @@ class _MyHomePageState extends State<MyHomePage> {
         width: double.infinity,
         child: Transform.translate(
             offset: Offset(pc.xOffset * maxOffset, pc.yOffset * maxOffset),
-            child:
-            Transform.rotate(
+            child: Transform.rotate(
               angle: pc.rotation * rotationFrac * pi / 12,
               child: FractionallySizedBox(
                 alignment: Alignment.center,
                 heightFactor: 0.7,
                 widthFactor: 0.7,
                 child: GestureDetector(
-                    onTapDown: (TapDownDetails tap) {
-                      if (dialogMode == DialogMode.none) {
-                        _doSlap(tap.globalPosition, displaySize.height);
-                      }
-                    },
-                    child: _cardImage(pc.card),
+                  onTapDown: (TapDownDetails tap) {
+                    if (dialogMode == DialogMode.none) {
+                      _doSlap(tap.globalPosition, displaySize.height);
+                    }
+                  },
+                  child: _cardImage(pc.card),
                 ),
               ),
-            )
-        )
-    );
+            )));
   }
 
-  List<Widget> _pileCardWidgets(Iterable<PileCard> pileCards, final Size displaySize) {
+  List<Widget> _pileCardWidgets(
+      Iterable<PileCard> pileCards, final Size displaySize) {
     return pileCards.map((pc) => _pileCardWidget(pc, displaySize)).toList();
   }
 
   Widget _pileContent(final Game game, final Size displaySize) {
-    final pileCardsWithoutLast = game.pileCards.sublist(0, max(0, game.pileCards.length - 1));
+    final pileCardsWithoutLast =
+        game.pileCards.sublist(0, max(0, game.pileCards.length - 1));
     final lastPileCard = game.pileCards.isNotEmpty ? game.pileCards.last : null;
 
     /* // Fixed cards to take screenshots for icon.
@@ -585,33 +623,38 @@ class _MyHomePageState extends State<MyHomePage> {
       case AnimationMode.ai_slap:
         return Stack(children: [
           ..._pileCardWidgets(game.pileCards, displaySize),
-          Center(child: Image(
-              image: AssetImage('assets/cats/paw${catImageNumbers[aiSlapPlayerIndex!]}.png'),
-              alignment: Alignment.center,
+          Center(
+              child: Image(
+            image: AssetImage(
+                'assets/cats/paw${catImageNumbers[aiSlapPlayerIndex!]}.png'),
+            alignment: Alignment.center,
           )),
         ]);
 
       case AnimationMode.play_card_back:
-        return Stack(
-              children: [
-                ..._pileCardWidgets(pileCardsWithoutLast, displaySize).toList(),
-              if (lastPileCard != null) TweenAnimationBuilder(
-                tween: Tween(begin: 0.0, end: 1.0),
-                duration: Duration(milliseconds: 200),
-                onEnd: () => setState(_playCardFinished),
-                builder: (BuildContext context, double animValue, Widget? child) {
-                  double startYOff = displaySize.height / 2 * (lastPileCard.playedBy == 0 ? 1 : -1);
-                  return Transform.translate(
-                    offset: Offset(0, startYOff * (1 - animValue)),
-                    child: _pileCardWidget(lastPileCard, displaySize, rotationFrac: animValue),
-                  );
-                },
-              ),
-            ]
-        );
+        return Stack(children: [
+          ..._pileCardWidgets(pileCardsWithoutLast, displaySize).toList(),
+          if (lastPileCard != null)
+            TweenAnimationBuilder(
+              tween: Tween(begin: 0.0, end: 1.0),
+              duration: Duration(milliseconds: 200),
+              onEnd: () => setState(_playCardFinished),
+              builder: (BuildContext context, double animValue, Widget? child) {
+                double startYOff = displaySize.height /
+                    2 *
+                    (lastPileCard.playedBy == 0 ? 1 : -1);
+                return Transform.translate(
+                  offset: Offset(0, startYOff * (1 - animValue)),
+                  child: _pileCardWidget(lastPileCard, displaySize,
+                      rotationFrac: animValue),
+                );
+              },
+            ),
+        ]);
 
       case AnimationMode.pile_to_winner:
-        double endYOff = displaySize.height * 0.75 * (pileMovingToPlayer == 0 ? 1 : -1);
+        double endYOff =
+            displaySize.height * 0.75 * (pileMovingToPlayer == 0 ? 1 : -1);
         return TweenAnimationBuilder(
           tween: Tween(begin: 0.0, end: 1.0),
           duration: Duration(milliseconds: 300),
@@ -628,26 +671,34 @@ class _MyHomePageState extends State<MyHomePage> {
       case AnimationMode.illegal_slap:
         final pc = this.penaltyCard;
         return Stack(children: [
-          if (pc != null) TweenAnimationBuilder(
-            tween: Tween(begin: 0.0, end: 1.0),
-            duration: illegalSlapAnimationDuration,
-            builder: (BuildContext context, double animValue, Widget? child) {
-              double startYOff = displaySize.height / 2 * (pc.playedBy == 0 ? 1 : -1);
-              return Transform.translate(
-                offset: Offset(0, startYOff * (1 - animValue)),
-                child: _pileCardWidget(pc, displaySize, rotationFrac: animValue),
-              );
-            },
-          ),
-          Opacity(opacity: penaltyCard != null ? 0.25 : 1.0, child: Stack(
-              children: _pileCardWidgets(
-                  penaltyCard != null ? game.pileCards.sublist(1) : game.pileCards,
-                  displaySize),
-          )),
+          if (pc != null)
+            TweenAnimationBuilder(
+              tween: Tween(begin: 0.0, end: 1.0),
+              duration: illegalSlapAnimationDuration,
+              builder: (BuildContext context, double animValue, Widget? child) {
+                double startYOff =
+                    displaySize.height / 2 * (pc.playedBy == 0 ? 1 : -1);
+                return Transform.translate(
+                  offset: Offset(0, startYOff * (1 - animValue)),
+                  child:
+                      _pileCardWidget(pc, displaySize, rotationFrac: animValue),
+                );
+              },
+            ),
+          Opacity(
+              opacity: penaltyCard != null ? 0.25 : 1.0,
+              child: Stack(
+                children: _pileCardWidgets(
+                    penaltyCard != null
+                        ? game.pileCards.sublist(1)
+                        : game.pileCards,
+                    displaySize),
+              )),
           TweenAnimationBuilder(
             tween: Tween(begin: 2.0, end: 0.0),
             duration: illegalSlapAnimationDuration,
-            child: Center(child: Image(
+            child: Center(
+                child: Image(
               image: AssetImage('assets/misc/no.png'),
               alignment: Alignment.center,
             )),
@@ -674,42 +725,43 @@ class _MyHomePageState extends State<MyHomePage> {
     final size = min(minDim * 0.2, 100.0);
     final padding = 10.0;
     return Positioned(
-      left: playerIndex == 0 ? padding : null,
-      bottom: playerIndex == 0 ? padding : null,
-      right: playerIndex == 0 ? null : padding,
-      top: playerIndex == 0 ? null : padding,
-      child: Transform.rotate(
-        angle: playerIndex == 1 ? pi : 0,
-        child: Stack(
-          children: [
-            SizedBox(
-                width: size,
-                height: size,
-                child: Image(image: AssetImage('assets/cats/paw${catImageNumbers[playerIndex]}.png'))),
-            SizedBox(
-                width: size,
-                height: size,
-                child: Image(image: AssetImage('assets/misc/no.png'))),
-            Padding(
-              padding: EdgeInsets.only(left: size * 0.55, top: size * 0.55),
-              child: SizedBox(
-                  width: size * 0.45,
-                  height: size * 0.45,
-                  child: TextButton(
-                      style: TextButton.styleFrom(
-                        shape: CircleBorder(),
-                        // primary: Colors.blue,
-                        backgroundColor: Colors.white,
-                      ),
-                    onPressed: () {},
-                    child: Text(numTimeoutCards.toString(),
-                    style: TextStyle(fontSize: size * 0.24, height: 0))),
-              ),
-            ),
-          ],
-        )
-      )
-    );
+        left: playerIndex == 0 ? padding : null,
+        bottom: playerIndex == 0 ? padding : null,
+        right: playerIndex == 0 ? null : padding,
+        top: playerIndex == 0 ? null : padding,
+        child: Transform.rotate(
+            angle: playerIndex == 1 ? pi : 0,
+            child: Stack(
+              children: [
+                SizedBox(
+                    width: size,
+                    height: size,
+                    child: Image(
+                        image: AssetImage(
+                            'assets/cats/paw${catImageNumbers[playerIndex]}.png'))),
+                SizedBox(
+                    width: size,
+                    height: size,
+                    child: Image(image: AssetImage('assets/misc/no.png'))),
+                Padding(
+                  padding: EdgeInsets.only(left: size * 0.55, top: size * 0.55),
+                  child: SizedBox(
+                    width: size * 0.45,
+                    height: size * 0.45,
+                    child: TextButton(
+                        style: TextButton.styleFrom(
+                          shape: CircleBorder(),
+                          // primary: Colors.blue,
+                          backgroundColor: Colors.white,
+                        ),
+                        onPressed: () {},
+                        child: Text(numTimeoutCards.toString(),
+                            style:
+                                TextStyle(fontSize: size * 0.24, height: 0))),
+                  ),
+                ),
+              ],
+            )));
   }
 
   Widget _paddingAll(final double paddingPx, final Widget child) {
@@ -728,61 +780,28 @@ class _MyHomePageState extends State<MyHomePage> {
     ]);
   }
 
-  Widget _mainMenuDialog(final BuildContext context, final Size displaySize) {
-    final minDim = min(displaySize.width, displaySize.height);
-
-    return Container(
-        width: double.infinity,
-        height: double.infinity,
-        child: Center(
-          child: Dialog(
-            backgroundColor: dialogBackgroundColor,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _paddingAll(10, Text(
-                    'Egyptian Mouse Pounce',
-                    style: TextStyle(
-                      fontSize: min(minDim / 18, 40),
-                    )
-                )),
-                Table(
-                  defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-                  defaultColumnWidth: const IntrinsicColumnWidth(),
-                  children: [
-                    _makeButtonRow('Play against computer', _startOnePlayerGame),
-                    _makeButtonRow('Play against human', _startTwoPlayerGame),
-                    _makeButtonRow('Watch the cats', _watchAiGame),
-                    _makeButtonRow('Preferences...', _showPreferences),
-                    _makeButtonRow('About...', () => _showAboutDialog(context)),
-                  ],
-                ),
-                Container(height: 10, width: 0),
-              ],
-            ),
-          ),
-        ),
-      );
-  }
+  // Main menu moved to a separate bottom-sheet widget in lib/main_menu_sheet.dart
 
   Widget _pausedMenuDialog(final Size displaySize) {
     return Container(
-        width: double.infinity,
-        height: double.infinity,
-        child: Center(
-          child: Dialog(
+      width: double.infinity,
+      height: double.infinity,
+      child: Center(
+        child: Dialog(
           backgroundColor: dialogBackgroundColor,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _paddingAll(10, Table(
-                defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-                defaultColumnWidth: const IntrinsicColumnWidth(),
-                children: [
-                  _makeButtonRow("Continue", _continueGame),
-                  _makeButtonRow("End Game", _endGame),
-                ],
-              )),
+              _paddingAll(
+                  10,
+                  Table(
+                    defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                    defaultColumnWidth: const IntrinsicColumnWidth(),
+                    children: [
+                      _makeButtonRow("Continue", _continueGame),
+                      _makeButtonRow("End Game", _endGame),
+                    ],
+                  )),
             ],
           ),
         ),
@@ -795,43 +814,44 @@ class _MyHomePageState extends State<MyHomePage> {
     if (winner == null) {
       return Container();
     }
-    String title = (aiMode == AIMode.human_vs_ai) ?
-        (winner == 0 ? 'You won!' : 'You lost!') :
-        'Player ${winner + 1} won!';
+    String title = (aiMode == AIMode.human_vs_ai)
+        ? (winner == 0 ? 'You won!' : 'You lost!')
+        : 'Player ${winner + 1} won!';
     return Container(
-      width: double.infinity,
-      height: double.infinity,
-      child: Center(
-        child: Dialog(
-          backgroundColor: dialogBackgroundColor,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _paddingAll(10, Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: min(displaySize.width / 15, 40),
-                  )
-              )),
-              _paddingAll(10, Table(
-                defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-                defaultColumnWidth: const IntrinsicColumnWidth(),
-                children: [
-                  _makeButtonRow("Rematch", _startNewGame),
-                  _makeButtonRow("Main menu", _endGame),
-                ],
-              )),
-            ],
-          )
-        )
-      )
-    );
+        width: double.infinity,
+        height: double.infinity,
+        child: Center(
+            child: Dialog(
+                backgroundColor: dialogBackgroundColor,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _paddingAll(
+                        10,
+                        Text(title,
+                            style: TextStyle(
+                              fontSize: min(displaySize.width / 15, 40),
+                            ))),
+                    _paddingAll(
+                        10,
+                        Table(
+                          defaultVerticalAlignment:
+                              TableCellVerticalAlignment.middle,
+                          defaultColumnWidth: const IntrinsicColumnWidth(),
+                          children: [
+                            _makeButtonRow("Rematch", _startNewGame),
+                            _makeButtonRow("Main menu", _endGame),
+                          ],
+                        )),
+                  ],
+                ))));
   }
 
   void _startOnePlayerGame() {
     setState(() {
       aiMode = AIMode.human_vs_ai;
       dialogMode = DialogMode.none;
+      menuButtonVisible = false;
       animationMode = AnimationMode.none;
       catImageNumbers = _randomCatImageNumbers();
       aiSlapCounter++;
@@ -843,6 +863,7 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       aiMode = AIMode.human_vs_human;
       dialogMode = DialogMode.none;
+      menuButtonVisible = false;
       animationMode = AnimationMode.none;
       aiSlapCounter++;
       game.startGame();
@@ -852,6 +873,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void _startNewGame() {
     setState(() {
       dialogMode = DialogMode.none;
+      menuButtonVisible = false;
       animationMode = AnimationMode.none;
       aiSlapCounter++;
       game.startGame();
@@ -861,35 +883,61 @@ class _MyHomePageState extends State<MyHomePage> {
   void _continueGame() {
     setState(() {
       dialogMode = DialogMode.none;
+      menuButtonVisible = false;
     });
   }
 
   void _endGame() {
     setState(() {
-      dialogMode = DialogMode.main_menu;
+      dialogMode = DialogMode.none;
       aiMode = AIMode.ai_vs_ai;
+      menuButtonVisible = false;
       animationMode = AnimationMode.none;
       aiSlapCounter++;
       game.startGame();
       _scheduleAiPlayIfNeeded();
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final fullDisplaySize = MediaQuery.sizeOf(context);
+      final displayPadding = MediaQuery.paddingOf(context);
+      final displaySize = Size(
+          fullDisplaySize.width - displayPadding.left - displayPadding.right,
+          fullDisplaySize.height - displayPadding.top - displayPadding.bottom);
+      _showMenu(context, displaySize);
     });
   }
 
   void _showPreferences() {
     setState(() {
       dialogMode = DialogMode.preferences;
+      menuButtonVisible = false;
     });
   }
 
   void _closePreferences() {
     setState(() {
-      dialogMode = (aiMode == AIMode.ai_vs_ai ? DialogMode.main_menu : DialogMode.none);
+      dialogMode = DialogMode.none;
+      menuButtonVisible = false;
     });
+    if (aiMode == AIMode.ai_vs_ai) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final fullDisplaySize = MediaQuery.sizeOf(context);
+        final displayPadding = MediaQuery.paddingOf(context);
+        final displaySize = Size(
+            fullDisplaySize.width - displayPadding.left - displayPadding.right,
+            fullDisplaySize.height -
+                displayPadding.top -
+                displayPadding.bottom);
+        _showMenu(context, displaySize);
+      });
+    }
   }
 
   void _watchAiGame() {
     setState(() {
       dialogMode = DialogMode.none;
+      // Mark that the menu FAB should be visible because user chose "Watch the cats"
+      menuButtonVisible = true;
       if (aiMode != AIMode.ai_vs_ai) {
         aiMode = AIMode.ai_vs_ai;
         game.startGame();
@@ -898,46 +946,64 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  Widget _menuIcon() {
+  Widget _menuIcon(final Size displaySize) {
     return Padding(
       padding: EdgeInsets.all(10),
       child: FloatingActionButton(
-        onPressed: _showMenu,
+        onPressed: () => _showMenu(context, displaySize),
         child: Icon(aiMode == AIMode.ai_vs_ai ? Icons.menu : Icons.pause),
       ),
     );
   }
 
-  void _showMenu() {
-    setState(() {
-      switch (aiMode) {
-        case AIMode.ai_vs_ai:
-          dialogMode = DialogMode.main_menu;
-          break;
-        default:
-          dialogMode = DialogMode.game_paused;
-          break;
-      }
-    });
+  void _showMenu(BuildContext context, Size displaySize) async {
+    if (aiMode == AIMode.ai_vs_ai) {
+      setState(() => menuOpen = true);
+      await showMainMenuBottomSheet(
+        context,
+        displaySize,
+        onOnePlayer: _startOnePlayerGame,
+        onTwoPlayer: _startTwoPlayerGame,
+        onWatchAi: _watchAiGame,
+        onPreferences: () =>
+            setState(() => dialogMode = DialogMode.preferences),
+        onAbout: (ctx) => _showAboutDialog(ctx),
+      );
+      if (mounted) setState(() => menuOpen = false);
+    } else {
+      setState(() {
+        dialogMode = DialogMode.game_paused;
+      });
+    }
   }
 
   void _showAboutDialog(BuildContext context) async {
-    final aboutText = await DefaultAssetBundle.of(context).loadString('assets/doc/about.md');
+    final aboutText =
+        await DefaultAssetBundle.of(context).loadString('assets/doc/about.md');
     showAboutDialog(
-        context: context,
-        applicationName: appTitle,
-        applicationVersion: appVersion,
-        applicationLegalese: appLegalese,
-        children: [
-          Container(height: 15),
-          MarkdownBody(
-            data: aboutText,
-            onTapLink: (text, href, title) => launch(href!),
-            // https://github.com/flutter/flutter_markdown/issues/311
-            listItemCrossAxisAlignment: MarkdownListItemCrossAxisAlignment.start,
-          ),
-        ],
+      context: context,
+      applicationName: appTitle,
+      applicationVersion: appVersion,
+      applicationLegalese: appLegalese,
+      children: [
+        Container(height: 15),
+        MarkdownBody(
+          data: aboutText,
+          onTapLink: (text, href, title) => launch(href!),
+          // https://github.com/flutter/flutter_markdown/issues/311
+          listItemCrossAxisAlignment: MarkdownListItemCrossAxisAlignment.start,
+        ),
+      ],
     );
+  }
+
+  bool _isGameActive() {
+    try {
+      return game.playerCards.isNotEmpty &&
+          (game.playerCards[0].isNotEmpty || game.playerCards[1].isNotEmpty);
+    } catch (e) {
+      return false;
+    }
   }
 
   void setSoundEnabled(bool enabled) {
@@ -947,8 +1013,7 @@ class _MyHomePageState extends State<MyHomePage> {
     preferences.setBool(soundEnabledPrefsKey, enabled);
     if (Random().nextBool()) {
       soundPlayer.playMadSound();
-    }
-    else {
+    } else {
       soundPlayer.playHappySound();
     }
   }
@@ -959,55 +1024,80 @@ class _MyHomePageState extends State<MyHomePage> {
     final baseFontSize = min(maxDim / 36.0, minDim / 20.0);
     final titleFontSize = baseFontSize * 1.3;
 
-    final makeRuleCheckboxRow = (String title, RuleVariation v, [double fontScale = 1.0]) {
+    final makeRuleCheckboxRow =
+        (String title, RuleVariation v, [double fontScale = 1.0]) {
       return CheckboxListTile(
-          dense: true,
-          title: Text(title, style: TextStyle(fontSize: baseFontSize * fontScale)),
-          isThreeLine: false,
-          onChanged: (bool? checked) {
-            setState(() => game.rules.setVariationEnabled(v, checked == true));
-            this.preferences.setBool(prefsKeyForVariation(v), checked == true);
-          },
-          value: game.rules.isVariationEnabled(v),
-        );
+        dense: true,
+        title:
+            Text(title, style: TextStyle(fontSize: baseFontSize * fontScale)),
+        isThreeLine: false,
+        onChanged: (bool? checked) {
+          setState(() => game.rules.setVariationEnabled(v, checked == true));
+          this.preferences.setBool(prefsKeyForVariation(v), checked == true);
+        },
+        value: game.rules.isVariationEnabled(v),
+      );
     };
 
     final makeAiSpeedRow = () {
-      final menuItemStyle = TextStyle(fontSize: baseFontSize * 0.9, color: Colors.blue, fontWeight: FontWeight.bold);
-      return _paddingAll(0, ListTile(
-        title: Text('Cat slap speed:', style: TextStyle(fontSize: baseFontSize)),
-        trailing: DropdownButton(
-          value: aiSlapSpeed,
-          onChanged: (AISlapSpeed? value) {
-            setState(() => aiSlapSpeed = value!);
-            this.preferences.setString(aiSlapSpeedPrefsKey, value.toString());
-          },
-          items: [
-            DropdownMenuItem(value: AISlapSpeed.slow, child: Text('Slow', style: menuItemStyle)),
-            DropdownMenuItem(
-                value: AISlapSpeed.medium, child: Text('Medium', style: menuItemStyle)),
-            DropdownMenuItem(value: AISlapSpeed.fast, child: Text('Fast', style: menuItemStyle)),
-          ],
-        )),
+      final menuItemStyle = TextStyle(
+          fontSize: baseFontSize * 0.9,
+          color: Colors.blue,
+          fontWeight: FontWeight.bold);
+      return _paddingAll(
+        0,
+        ListTile(
+            title: Text('Cat slap speed:',
+                style: TextStyle(fontSize: baseFontSize)),
+            trailing: DropdownButton(
+              value: aiSlapSpeed,
+              onChanged: (AISlapSpeed? value) {
+                setState(() => aiSlapSpeed = value!);
+                this
+                    .preferences
+                    .setString(aiSlapSpeedPrefsKey, value.toString());
+              },
+              items: [
+                DropdownMenuItem(
+                    value: AISlapSpeed.slow,
+                    child: Text('Slow', style: menuItemStyle)),
+                DropdownMenuItem(
+                    value: AISlapSpeed.medium,
+                    child: Text('Medium', style: menuItemStyle)),
+                DropdownMenuItem(
+                    value: AISlapSpeed.fast,
+                    child: Text('Fast', style: menuItemStyle)),
+              ],
+            )),
       );
     };
 
     final makeSlapPenaltyRow = () {
-      final menuItemStyle = TextStyle(fontSize: baseFontSize * 0.9, color: Colors.blue, fontWeight: FontWeight.bold);
+      final menuItemStyle = TextStyle(
+          fontSize: baseFontSize * 0.9,
+          color: Colors.blue,
+          fontWeight: FontWeight.bold);
       return DropdownButton(
-            value: game.rules.badSlapPenalty,
-            onChanged: (BadSlapPenaltyType? p) {
-              setState(() => game.rules.badSlapPenalty = p!);
-              this.preferences.setString(badSlapPenaltyPrefsKey, p.toString());
-            },
-            items: [
-              DropdownMenuItem(value: BadSlapPenaltyType.none, child: Text('None', style: menuItemStyle)),
-              DropdownMenuItem(
-                  value: BadSlapPenaltyType.penalty_card, child: Text('Penalty card', style: menuItemStyle)),
-              DropdownMenuItem(value: BadSlapPenaltyType.slap_timeout, child: Text("Can't slap for next 5 cards", style: menuItemStyle)),
-              DropdownMenuItem(value: BadSlapPenaltyType.opponent_wins_pile, child: Text('Opponent wins pile', style: menuItemStyle)),
-            ],
-          );
+        value: game.rules.badSlapPenalty,
+        onChanged: (BadSlapPenaltyType? p) {
+          setState(() => game.rules.badSlapPenalty = p!);
+          this.preferences.setString(badSlapPenaltyPrefsKey, p.toString());
+        },
+        items: [
+          DropdownMenuItem(
+              value: BadSlapPenaltyType.none,
+              child: Text('None', style: menuItemStyle)),
+          DropdownMenuItem(
+              value: BadSlapPenaltyType.penalty_card,
+              child: Text('Penalty card', style: menuItemStyle)),
+          DropdownMenuItem(
+              value: BadSlapPenaltyType.slap_timeout,
+              child: Text("Can't slap for next 5 cards", style: menuItemStyle)),
+          DropdownMenuItem(
+              value: BadSlapPenaltyType.opponent_wins_pile,
+              child: Text('Opponent wins pile', style: menuItemStyle)),
+        ],
+      );
     };
 
     final dialogWidth = 0.8 * minDim;
@@ -1016,7 +1106,8 @@ class _MyHomePageState extends State<MyHomePage> {
       width: double.infinity,
       height: double.infinity,
       child: Dialog(
-        insetPadding: EdgeInsets.only(left: dialogPadding, right: dialogPadding),
+        insetPadding:
+            EdgeInsets.only(left: dialogPadding, right: dialogPadding),
         backgroundColor: dialogBackgroundColor,
         child: Padding(
           padding: EdgeInsets.all(minDim * 0.03),
@@ -1024,43 +1115,50 @@ class _MyHomePageState extends State<MyHomePage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text('Preferences', style: TextStyle(fontSize: titleFontSize)),
-
-              Flexible(child: Scrollbar(
-                thumbVisibility: true,
-                child: SingleChildScrollView(
-                primary: true,
-                child: Container(
-                  color: dialogTableBackgroundColor,
-                  child: Column(children: [
-                    CheckboxListTile(
-                      dense: true,
-                      title: Text("Enable sound", style: TextStyle(fontSize: baseFontSize)),
-                      value: soundPlayer.enabled,
-                      onChanged: (bool? checked) {
-                        setSoundEnabled(checked == true);
-                      },
-                    ),
-
-                    makeAiSpeedRow(),
-                    makeRuleCheckboxRow('Tens are stoppers', RuleVariation.ten_is_stopper),
-                    SizedBox(height: baseFontSize * 0.25),
-
-                    Row(children: [Text('Slap on:', style: TextStyle(fontSize: baseFontSize))]),
-                    makeRuleCheckboxRow('Sandwiches', RuleVariation.slap_on_sandwich, 0.85),
-                    makeRuleCheckboxRow('Run of 3', RuleVariation.slap_on_run_of_3, 0.85),
-                    makeRuleCheckboxRow(
-                        '4 of same suit', RuleVariation.slap_on_same_suit_of_4, 0.85),
-                    makeRuleCheckboxRow(
-                        'Adds to 10', RuleVariation.slap_on_add_to_10, 0.85),
-                    makeRuleCheckboxRow('Marriages', RuleVariation.slap_on_marriage, 0.85),
-                    makeRuleCheckboxRow('Divorces', RuleVariation.slap_on_divorce, 0.85),
-
-                    Container(height: baseFontSize * 0.25),
-
-                    Row(children: [Text('Penalty for wrong slap:', style: TextStyle(fontSize: baseFontSize))]),
-                    Row(children: [makeSlapPenaltyRow()]),
-              ]))))),
-
+              Flexible(
+                  child: Scrollbar(
+                      thumbVisibility: true,
+                      child: SingleChildScrollView(
+                          primary: true,
+                          child: Container(
+                              color: dialogTableBackgroundColor,
+                              child: Column(children: [
+                                CheckboxListTile(
+                                  dense: true,
+                                  title: Text("Enable sound",
+                                      style: TextStyle(fontSize: baseFontSize)),
+                                  value: soundPlayer.enabled,
+                                  onChanged: (bool? checked) {
+                                    setSoundEnabled(checked == true);
+                                  },
+                                ),
+                                makeAiSpeedRow(),
+                                makeRuleCheckboxRow('Tens are stoppers',
+                                    RuleVariation.ten_is_stopper),
+                                SizedBox(height: baseFontSize * 0.25),
+                                Row(children: [
+                                  Text('Slap on:',
+                                      style: TextStyle(fontSize: baseFontSize))
+                                ]),
+                                makeRuleCheckboxRow('Sandwiches',
+                                    RuleVariation.slap_on_sandwich, 0.85),
+                                makeRuleCheckboxRow('Run of 3',
+                                    RuleVariation.slap_on_run_of_3, 0.85),
+                                makeRuleCheckboxRow('4 of same suit',
+                                    RuleVariation.slap_on_same_suit_of_4, 0.85),
+                                makeRuleCheckboxRow('Adds to 10',
+                                    RuleVariation.slap_on_add_to_10, 0.85),
+                                makeRuleCheckboxRow('Marriages',
+                                    RuleVariation.slap_on_marriage, 0.85),
+                                makeRuleCheckboxRow('Divorces',
+                                    RuleVariation.slap_on_divorce, 0.85),
+                                Container(height: baseFontSize * 0.25),
+                                Row(children: [
+                                  Text('Penalty for wrong slap:',
+                                      style: TextStyle(fontSize: baseFontSize))
+                                ]),
+                                Row(children: [makeSlapPenaltyRow()]),
+                              ]))))),
               SizedBox(height: 15, width: 0),
               ElevatedButton(
                 onPressed: _closePreferences,
@@ -1086,7 +1184,8 @@ class _MyHomePageState extends State<MyHomePage> {
     if (Platform.isAndroid) {
       Future.delayed(Duration(milliseconds: 1000), () {
         setState(() {
-          timingTestAnimationStartTimestamp = DateTime.now().millisecondsSinceEpoch;
+          timingTestAnimationStartTimestamp =
+              DateTime.now().millisecondsSinceEpoch;
           runningTimingTestAnimation = true;
           // print("*** Started test animation");
         });
@@ -1099,7 +1198,8 @@ class _MyHomePageState extends State<MyHomePage> {
       tween: Tween(begin: 0.0, end: 1.0),
       duration: Duration(seconds: 3),
       onEnd: timingTestAnimationFinished,
-      child: const Positioned(left: 0, top: 0, height: 0, width: 0, child: SizedBox()),
+      child: const Positioned(
+          left: 0, top: 0, height: 0, width: 0, child: SizedBox()),
       builder: (BuildContext context, double animMillis, Widget? child) {
         return child!;
       },
@@ -1107,15 +1207,19 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void timingTestAnimationFinished() {
-    int elapsed = DateTime.now().millisecondsSinceEpoch - timingTestAnimationStartTimestamp;
+    int elapsed = DateTime.now().millisecondsSinceEpoch -
+        timingTestAnimationStartTimestamp;
     // print("*** test animation done, elapsed: $elapsed");
     if (elapsed < 1000) {
-      setState(() {dialogMode = DialogMode.animation_speed_warning;});
+      setState(() {
+        dialogMode = DialogMode.animation_speed_warning;
+      });
     }
   }
 
   Widget animationSpeedWarningDialog(final Size displaySize) {
-    String animationMessage = 'If animations are too fast, check the "Transition animation scale" option in the Settings app and make sure it\'s not set to "off".';
+    String animationMessage =
+        'If animations are too fast, check the "Transition animation scale" option in the Settings app and make sure it\'s not set to "off".';
     return Container(
       width: double.infinity,
       height: double.infinity,
@@ -1125,16 +1229,22 @@ class _MyHomePageState extends State<MyHomePage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Padding(padding: EdgeInsets.all(24), child: Text(
-                  animationMessage,
-                  style: TextStyle(
-                    fontSize: 20,
-                  )
-              )),
-              Padding(padding: EdgeInsets.only(bottom: 24), child: ElevatedButton(
-                onPressed: () {setState(() {dialogMode = DialogMode.main_menu;});},
-                child: Text('OK'),
-              )),
+              Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Text(animationMessage,
+                      style: TextStyle(
+                        fontSize: 20,
+                      ))),
+              Padding(
+                  padding: EdgeInsets.only(bottom: 24),
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        dialogMode = DialogMode.main_menu;
+                      });
+                    },
+                    child: Text('OK'),
+                  )),
             ],
           ),
         ),
@@ -1157,71 +1267,75 @@ class _MyHomePageState extends State<MyHomePage> {
     const backgroundColor = Color.fromARGB(255, 187, 216, 182);
 
     return Scaffold(
-      backgroundColor: backgroundColor,
-      body: Padding(padding: displayPadding, child: Center(
-        child: Stack(
-          children: [
-            // Use a stack with the card pile last so that the cards will draw
-            // over the player areas when they're animating in.
-            Stack(
+        backgroundColor: backgroundColor,
+        body: Padding(
+          padding: displayPadding,
+          child: Center(
+            child: Stack(
               children: [
-                if (runningTimingTestAnimation) timingTestAnimation(),
-
-                Positioned(
-                  left: 0,
-                  width: displaySize.width,
-                  top: 0,
-                  height: playerHeight,
-                  child: Container(
-                    height: playerHeight,
-                    width: double.infinity,
-                    child: aiMode == AIMode.human_vs_human ?
-                      _playerStatusWidget(game, 1, displaySize) :
-                      _aiPlayerWidget(game, 1, displaySize)
-                  ),
-                ),
-                Positioned(
-                  left: 0,
-                  width: displaySize.width,
-                  top: displaySize.height - playerHeight,
-                  height: playerHeight,
-                  child: Container(
+                // Use a stack with the card pile last so that the cards will draw
+                // over the player areas when they're animating in.
+                Stack(
+                  children: [
+                    if (runningTimingTestAnimation) timingTestAnimation(),
+                    Positioned(
+                      left: 0,
+                      width: displaySize.width,
+                      top: 0,
                       height: playerHeight,
-                      width: double.infinity,
-                      child: aiMode == AIMode.ai_vs_ai ?
-                      _aiPlayerWidget(game, 0, displaySize) :
-                      _playerStatusWidget(game, 0, displaySize)
-                  ),
+                      child: Container(
+                          height: playerHeight,
+                          width: double.infinity,
+                          child: aiMode == AIMode.human_vs_human
+                              ? _playerStatusWidget(game, 1, displaySize)
+                              : _aiPlayerWidget(game, 1, displaySize)),
+                    ),
+                    Positioned(
+                      left: 0,
+                      width: displaySize.width,
+                      top: displaySize.height - playerHeight,
+                      height: playerHeight,
+                      child: Container(
+                          height: playerHeight,
+                          width: double.infinity,
+                          child: aiMode == AIMode.ai_vs_ai
+                              ? _aiPlayerWidget(game, 0, displaySize)
+                              : _playerStatusWidget(game, 0, displaySize)),
+                    ),
+                    Positioned(
+                      left: 0,
+                      width: displaySize.width,
+                      top: playerHeight,
+                      height: displaySize.height - 2 * playerHeight,
+                      child: Container(
+                        color: cardAreaBackgroundColor,
+                        child: Stack(children: [
+                          Container(
+                            child: _pileContent(game, displaySize),
+                          ),
+                          _noSlapWidget(0, displaySize),
+                          _noSlapWidget(1, displaySize),
+                        ]),
+                      ),
+                    ),
+                  ],
                 ),
-                Positioned(
-                  left: 0,
-                  width: displaySize.width,
-                  top: playerHeight,
-                  height: displaySize.height - 2 * playerHeight,
-                  child: Container(
-                    color: cardAreaBackgroundColor,
-                    child:
-                      Stack(children: [
-                        Container(
-                          child: _pileContent(game, displaySize),
-                        ),
-                        _noSlapWidget(0, displaySize),
-                        _noSlapWidget(1, displaySize),
-                      ]),
-                  ),
-                ),
+                if (dialogMode == DialogMode.game_paused)
+                  _pausedMenuDialog(displaySize),
+                if (dialogMode == DialogMode.game_over)
+                  _gameOverDialog(displaySize),
+                if (dialogMode == DialogMode.preferences)
+                  _preferencesDialog(displaySize),
+                if (dialogMode == DialogMode.animation_speed_warning)
+                  animationSpeedWarningDialog(displaySize),
+                if (dialogMode == DialogMode.none &&
+                    !menuOpen &&
+                    (menuButtonVisible || _isGameActive()))
+                  _menuIcon(displaySize),
+                // Text(this.animationMode.toString()),
               ],
             ),
-            if (dialogMode == DialogMode.main_menu) _mainMenuDialog(context, displaySize),
-            if (dialogMode == DialogMode.game_paused) _pausedMenuDialog(displaySize),
-            if (dialogMode == DialogMode.game_over) _gameOverDialog(displaySize),
-            if (dialogMode == DialogMode.preferences) _preferencesDialog(displaySize),
-            if (dialogMode == DialogMode.animation_speed_warning) animationSpeedWarningDialog(displaySize),
-            if (dialogMode == DialogMode.none) _menuIcon(),
-            // Text(this.animationMode.toString()),
-          ],
-        ),
-      ),
-    ));
+          ),
+        ));
   }
 }
