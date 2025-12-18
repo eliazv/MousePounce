@@ -16,6 +16,7 @@
 
 - musica non si stoppa se disattiviamo da impostazioni
 - non sento suoni in gioco di quando gioco una card e di qunado viene preso un mazzo, anche quando viene tappate le card ci deve essere feedback aptico e suono assets\audio\tap.wav
-- carte a valte sono trasparenti per qualche frazione di secondo appena venbgono giocaote, vorrie ci fosse un sistema per precaricarle tutte o qualcsoa di simile per otitmizzare e fare in modo che questo non accada
+- carte a valte sono trasparenti per qualche frazione di secondo appena venbgono giocaote, vorrie ci fosse un sistema per precaricarle tutte o qualcsoa di simile per otitmizzare e fare in modo che questo non accada, magari caricale all'avvio dell'app dato che vengono usate anche nei menu principale. vorrrie che ottimizzassi tutto
 - sfondi in modalita 2 player
 - sotto titolo img metti scritta piccola Egyptian Rat Screw
+- migliroa animzioni1

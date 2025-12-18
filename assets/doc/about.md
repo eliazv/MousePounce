@@ -1,4 +1,4 @@
-Comments or bug reports: [bnenning@gmail.com](mailto:bnenning@gmail.com)
+Comments or bug reports: [info@eliazavatta.it](mailto:info@eliazavatta.it)
 
 ## Basic Rules
 
@@ -33,24 +33,25 @@ of the screen. This is how the app determines which player slapped.
 ## Rule Variations
 
 Selecting "Preferences" from the main menu allows you to play with optional rules.
+
 - **Tens are stoppers**: If enabled, when one player plays a face card or ace and the other player
-plays a ten, that "stops" the threat and players return to alternately playing single cards.
+  plays a ten, that "stops" the threat and players return to alternately playing single cards.
 - **Slap on sandwiches**: If enabled, players can slap the pile when a "sandwich" occurs, which is
-two cards of the same rank with another card between them; for example 6-3-6.
+  two cards of the same rank with another card between them; for example 6-3-6.
 - **Slap on run of 3**: If enabled, players can slap the pile when 3 consecutive cards of increasing
-or decreasing rank are played, for example 8-7-6 or 9-10-jack. Aces can be high or low and can
-"wrap around", so players can slap on king-ace-2.
+  or decreasing rank are played, for example 8-7-6 or 9-10-jack. Aces can be high or low and can
+  "wrap around", so players can slap on king-ace-2.
 - **Slap on 4 of same suit**: If enabled, players can slap the pile when 4 cards of the same suit
-are played.
+  are played.
 - **Slap on adds to 10**: If enabled, players can slap the pile when the last two cards add to 10,
-for example a 7 and a 3. Face cards and aces don't trigger this rule.
+  for example a 7 and a 3. Face cards and aces don't trigger this rule.
 - **Slap on marriages**: If enabled, players can slap the pile when a "marriage" occurs, which is
-when a king and queen are played consecutively.
+  when a king and queen are played consecutively.
 - **Slap on divorces**: If enabled, players can slap the pile when a "divorce" occurs, which is
-when a king and queen are played with another card between them.
+  when a king and queen are played with another card between them.
 - **Penalty for wrong slap**: Allows you to choose the penalty if a player slaps incorrectly.
-"Penalty card" causes the offending player to put a card on the bottom of the current pile.
-"Can't slap for next 5 cards" prevents the player from slapping until 5 additional cards are played.
+  "Penalty card" causes the offending player to put a card on the bottom of the current pile.
+  "Can't slap for next 5 cards" prevents the player from slapping until 5 additional cards are played.
 
 ## License
 

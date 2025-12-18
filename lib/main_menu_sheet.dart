@@ -7,6 +7,9 @@ import 'types.dart';
 import 'preferences_sheet.dart';
 import 'rules_sheet.dart';
 
+// Persistent overlay entry for the top-left watch button.
+OverlayEntry? _watchOverlayEntry;
+
 /// A modern glass-effect bottom sheet for the main menu with integrated preferences.
 /// Call `showMainMenuBottomSheet` to present it. Buttons call the provided callbacks
 /// after closing the sheet.
@@ -26,6 +29,45 @@ Future<void> showMainMenuBottomSheet(
   required Function(bool) onMusicEnabledChanged,
   required SoundEffectPlayer soundPlayer,
 }) {
+  // Ensure a persistent watch overlay exists (top-left). It is inserted once
+  // and removed only when the user taps it. Tapping will also close the
+  // currently opened modal (if any) by calling the `closeModal` callback.
+  final overlay = Overlay.of(context);
+  VoidCallback? closeModal;
+
+  if (overlay != null && _watchOverlayEntry == null) {
+    _watchOverlayEntry = OverlayEntry(
+      builder: (ctx) => Positioned(
+        top: 16,
+        left: 16,
+        child: SafeArea(
+          child: Material(
+            color: Colors.white.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(8),
+            child: InkWell(
+              onTap: () {
+                // Remove overlay permanently on user tap.
+                _watchOverlayEntry?.remove();
+                _watchOverlayEntry = null;
+                // Close the modal if it's open.
+                try {
+                  closeModal?.call();
+                } catch (_) {}
+                onWatchAi();
+              },
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: EdgeInsets.all(8),
+                child: Icon(Icons.visibility, color: Colors.white, size: 20),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    overlay.insert(_watchOverlayEntry!);
+  }
+
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -34,6 +76,12 @@ Future<void> showMainMenuBottomSheet(
     barrierColor: Colors.transparent,
     backgroundColor: Colors.transparent,
     builder: (ctx) {
+      // Capture a close callback bound to the modal's own context so the
+      // overlay button can close this specific sheet when tapped.
+      closeModal = () {
+        if (Navigator.of(ctx).canPop()) Navigator.of(ctx).pop();
+      };
+
       return _MainMenuBottomSheetContent(
         displaySize: displaySize,
         onOnePlayer: onOnePlayer,
@@ -187,7 +235,7 @@ class _MainMenuBottomSheetContentState
                     Text(
                       text,
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 22,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.5,
                         color: foregroundColor,
@@ -250,13 +298,6 @@ class _MainMenuBottomSheetContentState
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Top bar with Watch the cats icon
-        Row(
-          children: [
-            iconButton(Icons.visibility, widget.onWatchAi),
-            Spacer(),
-          ],
-        ),
         SizedBox(height: 12),
 
         // Logo
@@ -268,7 +309,52 @@ class _MainMenuBottomSheetContentState
             fit: BoxFit.contain,
           ),
         ),
-        SizedBox(height: 24),
+        SizedBox(height: 8),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Flexible(
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Text(
+                      'Egyptian Rat Screw',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w600,
+                        foreground: Paint()
+                          ..style = PaintingStyle.stroke
+                          ..strokeWidth = 3
+                          ..color = Colors.black,
+                      ),
+                    ),
+                    Text(
+                      'Egyptian Rat Screw',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w600,
+                        color: Color.fromARGB(255, 217, 27, 27),
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withOpacity(0.65),
+                            offset: Offset(2, 2),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 8),
 
         // Main game buttons
         bigButton('Play vs CPU', Icons.pets, widget.onOnePlayer,
