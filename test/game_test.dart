@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mouse_pounce/game.dart';
+import 'package:slapcards/game.dart';
 
 // Convert a string like "8D" to the corresponding card.
 PlayingCard card(String rankAndSuit) {
@@ -47,14 +47,16 @@ void main() {
 
     expect(game.currentPlayerIndex, 0);
     game.playCard();
-    expect(game.pileCards.map((pc) => pc.card.asciiString()).join(' '), '4S 7D KH 7C 2D QC TD 2S');
+    expect(game.pileCards.map((pc) => pc.card.asciiString()).join(' '),
+        '4S 7D KH 7C 2D QC TD 2S');
     expect(game.challengeChanceWinner, 1);
     expect(game.canPlayCard(0), false);
     expect(game.canPlayCard(1), false);
 
     game.movePileToPlayer(1);
     expect(game.playerCards[0].map((c) => c.asciiString()).join(' '), 'AS');
-    expect(game.playerCards[1].map((c) => c.asciiString()).join(' '), 'AH 4S 7D KH 7C 2D QC TD 2S');
+    expect(game.playerCards[1].map((c) => c.asciiString()).join(' '),
+        'AH 4S 7D KH 7C 2D QC TD 2S');
     expect(game.currentPlayerIndex, 1);
   });
 
@@ -86,7 +88,8 @@ void main() {
     final slapIndices = {2, 5, 7};
     for (var i = 0; i < 8; i++) {
       game.playCard();
-      expect(game.canSlapPile(), slapIndices.contains(i), reason: 'Wrong at index $i');
+      expect(game.canSlapPile(), slapIndices.contains(i),
+          reason: 'Wrong at index $i');
     }
   });
 
@@ -102,7 +105,8 @@ void main() {
     final slapIndices = {2, 5, 6, 9};
     for (var i = 0; i < 10; i++) {
       game.playCard();
-      expect(game.canSlapPile(), slapIndices.contains(i), reason: 'Wrong at index $i');
+      expect(game.canSlapPile(), slapIndices.contains(i),
+          reason: 'Wrong at index $i');
     }
   });
 
@@ -131,7 +135,8 @@ void main() {
     final slapIndices = {3, 4, 7, 8, 9};
     for (var i = 0; i < 11; i++) {
       game.playCard();
-      expect(game.canSlapPile(), slapIndices.contains(i), reason: 'Wrong at index $i');
+      expect(game.canSlapPile(), slapIndices.contains(i),
+          reason: 'Wrong at index $i');
     }
   });
 
@@ -160,7 +165,8 @@ void main() {
     final slapIndices = {1, 4, 5, 10};
     for (var i = 0; i < 12; i++) {
       game.playCard();
-      expect(game.canSlapPile(), slapIndices.contains(i), reason: 'Wrong at index $i');
+      expect(game.canSlapPile(), slapIndices.contains(i),
+          reason: 'Wrong at index $i');
     }
   });
 
@@ -174,7 +180,8 @@ void main() {
     final slapIndices = {1};
     for (var i = 0; i < 12; i++) {
       game.playCard();
-      expect(game.canSlapPile(), slapIndices.contains(i), reason: 'Wrong at index $i');
+      expect(game.canSlapPile(), slapIndices.contains(i),
+          reason: 'Wrong at index $i');
     }
   });
 
@@ -190,7 +197,8 @@ void main() {
     final slapIndices = {2, 7};
     for (var i = 0; i < 12; i++) {
       game.playCard();
-      expect(game.canSlapPile(), slapIndices.contains(i), reason: 'Wrong at index $i');
+      expect(game.canSlapPile(), slapIndices.contains(i),
+          reason: 'Wrong at index $i');
     }
   });
 
@@ -220,7 +228,8 @@ void main() {
     final slapIndices = {2, 5, 6, 7};
     for (var i = 0; i < 8; i++) {
       game.playCard();
-      expect(game.canSlapPile(), slapIndices.contains(i), reason: 'Wrong at index $i');
+      expect(game.canSlapPile(), slapIndices.contains(i),
+          reason: 'Wrong at index $i');
     }
   });
 
@@ -235,7 +244,8 @@ void main() {
     final slapIndices = {2, 4, 8, 10};
     for (var i = 0; i < 11; i++) {
       game.playCard();
-      expect(game.canSlapPile(), slapIndices.contains(i), reason: 'Wrong at index $i');
+      expect(game.canSlapPile(), slapIndices.contains(i),
+          reason: 'Wrong at index $i');
     }
   });
 

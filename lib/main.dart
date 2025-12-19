@@ -5,7 +5,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:mouse_pounce/soundeffects.dart';
+import 'package:slapcards/soundeffects.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -210,7 +210,21 @@ class _MyHomePageState extends State<MyHomePage> {
 
     // Preload all SVG card faces
     final suits = ['CLUB', 'DIAMOND', 'HEART', 'SPADE'];
-    final ranks = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11-JACK', '12-QUEEN', '13-KING'];
+    final ranks = [
+      '1',
+      '2',
+      '3',
+      '4',
+      '5',
+      '6',
+      '7',
+      '8',
+      '9',
+      '10',
+      '11-JACK',
+      '12-QUEEN',
+      '13-KING'
+    ];
 
     for (final suit in suits) {
       for (final rank in ranks) {
